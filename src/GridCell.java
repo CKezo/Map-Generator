@@ -1,5 +1,4 @@
 import java.awt.*;
-import java.util.ArrayList;
 
 public class GridCell {
     private int x;
@@ -7,7 +6,7 @@ public class GridCell {
     public Color color;
     public Color nextColor;
     public Color trueColor;
-    private GridCell[] neighbors;
+    private final GridCell[] neighbors;
     private int neighborCount;
     public double maxTemp;
     public double minTemp;
@@ -21,14 +20,6 @@ public class GridCell {
     public double nextWater;
     public boolean isLake;
     public boolean isRiver;
-    public ArrayList moveToNeighbors;
-    public ArrayList moveToOceanNeighbors;
-    public ArrayList moveToRiverNeighbors;
-    public ArrayList moveToLandNeighbors;
-    public ArrayList speciesPresent;
-    public ArrayList colonies;
-    public ArrayList nextPhaseSpecies;
-    public boolean newSpeciesPresent;
 
     public GridCell() {
         this.x = 0;
@@ -46,14 +37,6 @@ public class GridCell {
         this.minTemp = 0;
         this.avgTemp = 0;
         this.neighbors = new GridCell[4];
-        this.moveToNeighbors = new ArrayList();
-        this.moveToLandNeighbors = new ArrayList();
-        this.moveToOceanNeighbors = new ArrayList();
-        this.moveToRiverNeighbors = new ArrayList();
-        this.speciesPresent = new ArrayList();
-        this.colonies = new ArrayList();
-        this.nextPhaseSpecies = new ArrayList();
-        this.newSpeciesPresent = true;
     }
 
     public int getX() {
@@ -72,14 +55,9 @@ public class GridCell {
         this.y = valueY;
     }
 
-    public boolean addNeighbor(GridCell neighbor) {
-        if ((neighbor == null) || (neighborCount == 4)) {
-            return false;
-        } else {
-            neighbors[neighborCount] = neighbor;
-            neighborCount++;
-        }
-        return true;
+    public void addNeighbor(GridCell neighbor) {
+        neighbors[neighborCount] = neighbor;
+        neighborCount++;
     }
 
     public GridCell[] getNeighbors() {
@@ -90,20 +68,14 @@ public class GridCell {
         return neighborCount;
     }
 
-    public void printNeighbors() {
+   /* public void printNeighbors() {
         for (int n = 0; n < neighborCount; n++) {
             System.out.println("Coordinates for neighbor " + n + ": " + neighbors[n].x + ", " + neighbors[n].y);
         }
-    }
+    }*/
 
     public void changeCellColor(Color newColor) {
         this.color = newColor;
     }
 
-    public String getColor() {
-        if (this.color == oceanBlue) {
-            return "Blue";
-        }
-        return "";
-    }
 }

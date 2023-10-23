@@ -1,33 +1,29 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.font.FontRenderContext;
-import java.awt.geom.Rectangle2D;
 import java.lang.Math;
-import java.util.ArrayList;
-import java.util.HashMap;
-//import java.math.BigInteger;
+
 
 public class Grid extends JPanel{
     private final int cellColumnCount = 250;   //125
-    private final int cellRowCount = 160;  //80
+    private final int cellRowCount = 125;  //80
     public final int cellWidth = 3; //7
     public final int cellHeight = 3; //7
 
     public GridCell[][] grid = new GridCell[cellColumnCount][cellRowCount];
 
-    private Color landGreen = new Color(0, 183, 0);
-    private Color oceanBlue = new Color(16, 0, 204);
-    private Color freshBlue = new Color(0, 0, 255);
-    private Color mountainWhite = new Color(221,221,221);
-    private Color tropicalRainforest = new Color(0, 96, 6);
-    private Color tropicalSeasonalRain = new Color(0, 255, 128);
-    private Color temperateRainforest = new Color(0, 130, 95);
-    private Color temperateDeciduous = new Color(0, 204, 0);
-    private Color temperateGrassland = new Color(114, 255, 0);
-    private Color desert = new Color(255, 67, 0);
-    private Color savanna = new Color(255, 199, 0);
-    private Color tundra = new Color(0, 255, 255);
-    private Color taiga = new Color(0, 170, 255);
+    private final Color landGreen = new Color(0, 183, 0);
+    private final Color oceanBlue = new Color(16, 0, 204);
+    private final Color freshBlue = new Color(0, 0, 255);
+    private final Color mountainWhite = new Color(221,221,221);
+    private final Color tropicalRainforest = new Color(0, 96, 6);
+    private final Color tropicalSeasonalRain = new Color(0, 255, 128);
+    private final Color temperateRainforest = new Color(0, 130, 95);
+    private final Color temperateDeciduous = new Color(0, 204, 0);
+    private final Color temperateGrassland = new Color(114, 255, 0);
+    private final Color desert = new Color(255, 67, 0);
+    private final Color savanna = new Color(255, 199, 0);
+    private final Color tundra = new Color(0, 255, 255);
+    private final Color taiga = new Color(0, 170, 255);
 
     private double globalAvgHigh;
     private double globalAvgLow;
@@ -43,21 +39,7 @@ public class Grid extends JPanel{
     private boolean earthFlag = false;
     private boolean precipFlag = false;
     private boolean avgTempFlag = false;
-
-    //private Species firstSpecies = new Species("The First One", 70);
-    //private Colony firstColony = new Colony(firstSpecies, 100);
     private String windComesFrom;
-    private GridCell startingCell;
-    public ArrayList globalSpeciesList;
-    public ArrayList specieTraits;
-    int speciesNumber = 0;
-    int addSpecies = 0;
-    boolean newSpeciesViable = true;
-    private int qPress = 0;
-
-    private int startCellX;
-    private int startCellY;
-    private int spreads;
 
     public Grid() {
         setLayout(null);
@@ -70,7 +52,6 @@ public class Grid extends JPanel{
             }
         }
         defineNeighbors();
-        globalSpeciesList = new ArrayList();
     }
 
     public void defineNeighbors() {
@@ -100,8 +81,6 @@ public class Grid extends JPanel{
                         grid[c][r].addNeighbor(grid[c][r - 1]);
                         grid[c][r].addNeighbor(grid[c][r + 1]);
                 }
-                //System.out.println("Cell "+c+", "+r+":");
-                //grid[c][r].printNeighbors();
             }
         }
     }
@@ -166,10 +145,6 @@ public class Grid extends JPanel{
             point4y = (point3y - variation);
         }
 
-        //console.log("CenterX: " + centerX + " CenterY: " + centerY);
-        //console.log("clonex " + cloneCenterX + " cloney " + cloneCenterY);
-        //console.log("point1x " + point1x + " point3x " + point3x + " point2y " + point2y + " point4y " + point4y);
-
         //FINDING MIDPOINTS BETWEEN POINTS 1, 2, 3, 4
         if (point2x > point1x) {
             point12x = (Math.floor((point1x + point2x) / 2));
@@ -193,7 +168,6 @@ public class Grid extends JPanel{
         double difx1 = ((Math.max((Math.min((point2x - point23x), (point23x - point3x)) - 1), 0)) / 3);
         difx1 *= (Math.floor(Math.random() * 2) == 1 && difx < 0) ? 1.25 : -0.5;
         point23x += (Math.floor(Math.random() * difx1));
-        //System.out.println("Point12x: " + point12x + " Point23x: " + point23x);
         if ((int) point12x < 50 && (int) point23x > 75) {
             point23x = point12x;
         } else if ((int) point12x > 75 && (int) point23x < 50) {
@@ -334,13 +308,13 @@ public class Grid extends JPanel{
                 if (point4x < point1x || point4x < point41x) {
                     if (c > (point4x + trimEdge) && c <= point41x && r <= point4y && r > (m * c) + b) {
                         grid[c][r].changeCellColor(landGreen);
-                    } else if (point4x < point41x && point4x > point1x && c <= point1x && c >= 0 && r <= point4y && r > (m0 * c) + b0) {
+                    } else if (point4x < point41x && point4x > point1x && c <= point1x && r <= point4y && r > (m0 * c) + b0) {
                         grid[c][r].changeCellColor(landGreen);
                     }
                 } else if (point4x > point1x) {
-                    if (c > (point4x + trimEdge) && c < cellColumnCount && r <= point4y && r > (mZ * c) + bZ) {
+                    if (c > (point4x + trimEdge) && r <= point4y && r > (mZ * c) + bZ) {
                         grid[c][r].changeCellColor(landGreen);
-                    } else if (c <= point41x && c >= 0 && r <= point4y && r > (mZ * c) + bZ1) {
+                    } else if (c <= point41x && r <= point4y && r > (mZ * c) + bZ1) {
                         grid[c][r].changeCellColor(landGreen);
                     }
                 }
@@ -350,7 +324,7 @@ public class Grid extends JPanel{
                         grid[c][r].changeCellColor(landGreen);
                     }
                 } else if (point41x > point1x) {
-                    if (c >= point41x && c < cellColumnCount && r <= point4y && r > (m1 * c) + b1 && r > (point1y + trimEdge)) {
+                    if (c >= point41x && r <= point4y && r > (m1 * c) + b1 && r > (point1y + trimEdge)) {
                         grid[c][r].changeCellColor(landGreen);
                     }
                 }
@@ -360,7 +334,7 @@ public class Grid extends JPanel{
                         grid[c][r].changeCellColor(landGreen);
                     }
                 } else if (point12x < point1x) {
-                    if (c <= point12x && c >= 0 && r <= point2y && r > (m2 * c) + b2 && r > (point1y + trimEdge)) {
+                    if (c <= point12x && r <= point2y && r > (m2 * c) + b2 && r > (point1y + trimEdge)) {
                         grid[c][r].changeCellColor(landGreen);
                     }
                 }
@@ -368,13 +342,13 @@ public class Grid extends JPanel{
                 if (point2x > point1x || point2x > point12x) {
                     if (c >= point12x && c < (point2x - trimEdge) && r <= point2y && r > (m3 * c) + b3) {
                         grid[c][r].changeCellColor(landGreen);
-                    } else if (point2x > point12x && point2x < point1x && c >= point1x && c < cellColumnCount && r <= point2y && r > (m30 * c) + b30) {
+                    } else if (point2x > point12x && point2x < point1x && c >= point1x && r <= point2y && r > (m30 * c) + b30) {
                         grid[c][r].changeCellColor(landGreen);
                     }
                 } else if (point2x < point1x) {
-                    if (c < (point2x + trimEdge) && c >= 0 && r <= point2y && r > (m3Z * c) + b3Z) {
+                    if (c < (point2x + trimEdge) && r <= point2y && r > (m3Z * c) + b3Z) {
                         grid[c][r].changeCellColor(landGreen);
-                    } else if (c >= point12x && c < cellColumnCount && r <= point2y && r > (m3Z * c) + b3Z1) {
+                    } else if (c >= point12x && r <= point2y && r > (m3Z * c) + b3Z1) {
                         grid[c][r].changeCellColor(landGreen);
                     }
                 }
@@ -382,13 +356,13 @@ public class Grid extends JPanel{
                 if (point4x < point3x || point4x < point34x) {
                     if (c > (point4x + trimEdge) && c <= point34x && r >= point4y && r < (m4 * c) + b4) {
                         grid[c][r].changeCellColor(landGreen);
-                    } else if (point4x < point34x && point4x > point3x && c <= point3x && c >= 0 && r >= point4y && r < (m40 * c) + b40) {
+                    } else if (point4x < point34x && point4x > point3x && c <= point3x && r >= point4y && r < (m40 * c) + b40) {
                         grid[c][r].changeCellColor(landGreen);
                     }
                 } else if (point4x > point3x) {
-                    if (c > (point4x + trimEdge) && c < cellColumnCount && r >= point4y && r < (m4Z * c) + b4Z) {
+                    if (c > (point4x + trimEdge) && r >= point4y && r < (m4Z * c) + b4Z) {
                         grid[c][r].changeCellColor(landGreen);
-                    } else if (c <= point34x && c >= 0 && r >= point4y && r < (m4Z * c) + b4Z1) {
+                    } else if (c <= point34x && r >= point4y && r < (m4Z * c) + b4Z1) {
                         grid[c][r].changeCellColor(landGreen);
                     }
                 }
@@ -398,7 +372,7 @@ public class Grid extends JPanel{
                         grid[c][r].changeCellColor(landGreen);
                     }
                 } else if (point34x > point3x) {
-                    if (c >= point34x && c < cellColumnCount && r >= point4y && r < (m5 * c) + b5 && r > (point1y + trimEdge)) {
+                    if (c >= point34x && r >= point4y && r < (m5 * c) + b5 && r > (point1y + trimEdge)) {
                         grid[c][r].changeCellColor(landGreen);
                     }
                 }
@@ -409,7 +383,7 @@ public class Grid extends JPanel{
                         grid[c][r].changeCellColor(landGreen);
                     }
                 } else if (point23x < point3x) {
-                    if (c <= point23x && c >= 0 && r >= point2y && r < (m6 * c) + b6 && r > (point1y + trimEdge)) {
+                    if (c <= point23x && r >= point2y && r < (m6 * c) + b6 && r > (point1y + trimEdge)) {
                         grid[c][r].changeCellColor(landGreen);
                     }
                 }
@@ -417,73 +391,35 @@ public class Grid extends JPanel{
                 if (point2x > point3x || point2x > point23x) {
                     if (c >= point23x && c < (point2x - trimEdge) && r >= point2y && r < (m7 * c) + b7) {
                         grid[c][r].changeCellColor(landGreen);
-                    } else if (point2x > point23x && point2x < point3x && c >= point3x && c < cellColumnCount && r >= point2y && r < (m70 * c) + b70) {
+                    } else if (point2x > point23x && point2x < point3x && c >= point3x && r >= point2y && r < (m70 * c) + b70) {
                         grid[c][r].changeCellColor(landGreen);
                     }
                 } else if (point2x < point3x) {
-                    if (c < (point2x + trimEdge) && c >= 0 && r >= point2y && r < (m7Z * c) + b7Z) {
+                    if (c < (point2x + trimEdge) && r >= point2y && r < (m7Z * c) + b7Z) {
                         grid[c][r].changeCellColor(landGreen);
-                    } else if (c >= point23x && c < cellColumnCount && r >= point2y && r < (m7Z * c) + b7Z1) {
+                    } else if (c >= point23x && r >= point2y && r < (m7Z * c) + b7Z1) {
                         grid[c][r].changeCellColor(landGreen);
                     }
                 }
 
             }
         }
-        /*grid[centerX][centerY].changeCellColor(Color.red);
-        grid[(int)point1x][(int)point1y].changeCellColor(Color.red);
-        grid[(int)point12x][(int)point12y].changeCellColor(Color.red);
-        grid[(int)point2x][(int)point2y].changeCellColor(Color.red);
-        grid[(int)point23x][(int)point23y].changeCellColor(Color.red);
-        grid[(int)point3x][(int)point3y].changeCellColor(Color.red);
-        grid[(int)point34x][(int)point34y].changeCellColor(Color.red);
-        grid[(int)point4x][(int)point4y].changeCellColor(Color.red);
-        grid[(int)point41x][(int)point41y].changeCellColor(Color.red);*/
     }
 
     public void islandPlacer() {
-        islandMaker(20, 5, 2, 20); //1 size 20
-        islandMaker(20, 5, 2, 20); //1 size 20
-        islandMaker(20, 5, 2, 20); //1 size 20
-        islandMaker(20, 5, 2, 20); //1 size 20
-        islandMaker(20, 5, 2, 20); //1 size 20
-        islandMaker(20, 5, 2, 20); //1 size 20
-        islandMaker(20, 5, 2, 20); //1 size 20
-        islandMaker(20, 5, 2, 20); //1 size 20
-        islandMaker(16, 5, 2, 15);  //1
-        islandMaker(15, 5, 2, 15);  //1
-        islandMaker(15, 5, 2, 15);  //1
-        islandMaker(15, 5, 2, 15);  //1
-        islandMaker(15, 5, 2, 15);  //1
-        islandMaker(15, 5, 2, 15);  //1
-        islandMaker(15, 5, 2, 15);  //1
-        islandMaker(8, 4, 1, 8); //4
-        islandMaker(8, 4, 1, 8);
-        islandMaker(8, 4, 1, 8);
-        islandMaker(8, 4, 1, 8);
-        islandMaker(8, 4, 1, 8);
-        islandMaker(8, 4, 1, 8);
-        islandMaker(8, 4, 1, 8);
-        islandMaker(8, 4, 1, 8);
-        islandMaker(8, 4, 1, 8);
-        islandMaker(8, 4, 1, 8);
-        islandMaker(8, 4, 1, 8);
-        islandMaker(8, 4, 1, 8);
-        islandMaker(8, 4, 1, 8);
-        islandMaker(8, 4, 1, 8);
-        islandMaker(8, 4, 1, 8);
-        islandMaker(8, 4, 1, 8);
-        islandMaker(8, 4, 1, 8);
-        islandMaker(8, 4, 1, 8);
-        islandMaker(8, 4, 1, 8);
-        islandMaker(8, 4, 1, 8);
-        islandMaker(8, 4, 1, 8);
-        islandMaker(8, 4, 1, 8);
-        islandMaker(8, 4, 1, 8);
-        islandMaker(8, 4, 1, 8);
-        islandMaker(8, 4, 1, 8);
+        //until you go back and figure out what exactly poleDistance does, just keep it same size as "size"
+        //trimEdge - always 2 when size is 10+. 1 when below. Actually caps at size 3 when you get to 30+.
+        //what the hell does variation do?
+       // islandMaker(20, 5, 2, 20); //1 size 20
+        //islandMaker(20, 20, 2, 20); //1 size 20
+        islandMaker(30, 8, 3, 30); //1 size 20
+        //islandMaker(40, 8, 4, 40); //1 size 20
+        //islandMaker(10, 5, 1, 10); //1 size 20
+        /*islandMaker(15, 5, 2, 15);  //1
+        islandMaker(8, 4, 1, 8); //4*/
+
         double landPercent = 0;
-        while (landPercent < 0.4) {
+        /*while (landPercent < 0.4) {
             int land = 0;
             for (int c = 0; c < cellColumnCount; c++) {
                 for (int r = 0; r < cellRowCount; r++) {
@@ -492,13 +428,13 @@ public class Grid extends JPanel{
                     }
                 }
             }
-            landPercent = ((double) land) / ((double) 10000);
-            //System.out.println("PercentLand: " + landPercent + " Land: " + land + " Water: " + water);
+            landPercent = ((double) land) / ((double)(cellColumnCount * cellRowCount));
+            System.out.println("PercentLand: " + landPercent + " Land: " + land);
             if (landPercent < 0.4) {
                 double startingSize = ((Math.random() * 4) + 4);
                 islandMaker(startingSize, 2, 1, 6);
             }
-        }
+        }*/
         repaint();
     }
 
@@ -909,15 +845,6 @@ public class Grid extends JPanel{
                 }
                 lakePlaced = true;
                 repaint();
-                /*grid[centerX][centerY].changeCellColor(Color.red);
-                grid[(int)point1x][(int)point1y].changeCellColor(Color.red);
-                grid[(int)point12x][(int)point12y].changeCellColor(Color.red);
-                grid[(int)point2x][(int)point2y].changeCellColor(Color.red);
-                grid[(int)point23x][(int)point23y].changeCellColor(Color.red);
-                grid[(int)point3x][(int)point3y].changeCellColor(Color.red);
-                grid[(int)point34x][(int)point34y].changeCellColor(Color.red);
-                grid[(int)point4x][(int)point4y].changeCellColor(Color.red);
-                grid[(int)point41x][(int)point41y].changeCellColor(Color.red);*/
             }
         }
     }
@@ -938,8 +865,6 @@ public class Grid extends JPanel{
                 int freshBlueNum = 0;
                 int neighborCount = grid[c][r].getNeighborCount();
                 GridCell[] tempNeighbors = grid[c][r].getNeighbors();
-                //System.out.println("NeighCount: " + neighborCount);
-                //System.out.println("tempNeighbors:" + tempNeighbors[0].color);
                 for (int n = 0; n < neighborCount; n++) {
                     if (tempNeighbors[n].color.equals(landGreen)) {
                         greenNum++;
@@ -949,26 +874,24 @@ public class Grid extends JPanel{
                     }
                 }
 
-                //System.out.println("greenNum:" + greenNum);
-                //System.out.println("freshBlueNum: " + freshBlueNum);
-                if (greenNum > 2 && !grid[c][r].color.equals(freshBlue)) {
+                if (greenNum > 3 && !grid[c][r].color.equals(freshBlue)) {
                     grid[c][r].nextColor = landGreen;
                 }
-                else if (greenNum > 0 && greenNum < 3 && !grid[c][r].color.equals(freshBlue)) {
+                else if (greenNum > 0 && greenNum < 4 && !grid[c][r].color.equals(freshBlue)) {
                     double chance = Math.random();
-                    if (chance < 0.9) {
+                    if (chance < 0.85) {
                         grid[c][r].nextColor = landGreen;
                     }
                 }
                 if (freshBlueNum > 2) {
                     grid[c][r].nextColor = freshBlue;
                 }
-                else if (freshBlueNum > 0 && freshBlueNum < 3) {
+                /*else if (freshBlueNum > 0 && freshBlueNum < 3) {
                     double chance = Math.random();
                     if (chance < 0.95) {
                         grid[c][r].nextColor = freshBlue;
                     }
-                }
+                }*/
             }
         }
         for(int c=0;c<cellColumnCount;c++) {
@@ -2871,514 +2794,6 @@ public class Grid extends JPanel{
         }
     }
 
-    public void defineMoveToNeighbors() {
-        for (int c = 0; c < cellColumnCount; c++) {
-            for (int r = 0; r < cellRowCount; r++) {
-                switch (c) {                                   //This section adds N, E, S, W neighbors
-                    case 0:
-                        grid[c][r].moveToNeighbors.add(grid[cellColumnCount-1][r]);
-                        grid[c][r].moveToNeighbors.add(grid[c+1][r]);
-                        break;
-                    case (cellColumnCount - 1):
-                        grid[c][r].moveToNeighbors.add(grid[c-1][r]);
-                        grid[c][r].moveToNeighbors.add(grid[0][r]);
-                        break;
-                    default:
-                        grid[c][r].moveToNeighbors.add(grid[c-1][r]);
-                        grid[c][r].moveToNeighbors.add(grid[c+1][r]);
-                        break;
-                }
-
-                switch (r) {
-                    case 0:
-                        grid[c][r].moveToNeighbors.add(grid[c][r+1]);
-                        break;
-                    case (cellRowCount - 1):
-                        grid[c][r].moveToNeighbors.add(grid[c][r-1]);
-                        break;
-                    default:
-                        grid[c][r].moveToNeighbors.add(grid[c][r-1]);
-                        grid[c][r].moveToNeighbors.add(grid[c][r+1]);
-                        break;                                               //End section
-                }
-                if (r == 0) {                                            //This section adds the diagonal neighbors
-                    if (c > 0 && c < (cellColumnCount-1)) {              //top row cells, anything but corners
-                        grid[c][r].moveToNeighbors.add(grid[c-1][r+1]);
-                        grid[c][r].moveToNeighbors.add(grid[c+1][r+1]);
-                    }
-                    else if (c == 0) {                                    //top left cell
-                        grid[c][r].moveToNeighbors.add(grid[c+1][r+1]);
-                        grid[c][r].moveToNeighbors.add(grid[cellColumnCount-1][r+1]);
-                    }
-                    else if (c == (cellColumnCount-1)) {                  //top right cell
-                        grid[c][r].moveToNeighbors.add(grid[c-1][r+1]);
-                        grid[c][r].moveToNeighbors.add(grid[0][r+1]);
-                    }
-                }
-                else if (r > 0 && r < (cellRowCount-1)) {                   //cells along the left and right border that are not corner cells. ALSO everything in the middle
-                    if (c > 0 && c < (cellColumnCount-1)) {
-                        grid[c][r].moveToNeighbors.add(grid[c+1][r-1]);
-                        grid[c][r].moveToNeighbors.add(grid[c-1][r-1]);
-                        grid[c][r].moveToNeighbors.add(grid[c+1][r+1]);
-                        grid[c][r].moveToNeighbors.add(grid[c-1][r+1]);
-                    }
-                    else if (c == 0) {                                           //left border
-                        grid[c][r].moveToNeighbors.add(grid[c+1][r-1]);
-                        grid[c][r].moveToNeighbors.add(grid[cellColumnCount-1][r-1]);
-                        grid[c][r].moveToNeighbors.add(grid[c+1][r+1]);
-                        grid[c][r].moveToNeighbors.add(grid[cellColumnCount-1][r+1]);
-                    }
-                    else if (c == (cellColumnCount-1)) {                         //right border
-                        grid[c][r].moveToNeighbors.add(grid[c-1][r-1]);
-                        grid[c][r].moveToNeighbors.add(grid[0][r-1]);
-                        grid[c][r].moveToNeighbors.add(grid[c-1][r+1]);
-                        grid[c][r].moveToNeighbors.add(grid[0][r+1]);
-                    }
-                }
-                else if (r == (cellRowCount-1)) {                            //cells along the bottom row
-                    if (c > 0 && c < (cellColumnCount-1)) {                 //all bottom row cells except corners
-                        grid[c][r].moveToNeighbors.add(grid[c-1][r-1]);
-                        grid[c][r].moveToNeighbors.add(grid[c+1][r-1]);
-                    }
-                    else if (c == 0) {                                       //bottom left corner
-                        grid[c][r].moveToNeighbors.add(grid[c+1][r-1]);
-                        grid[c][r].moveToNeighbors.add(grid[cellColumnCount-1][r-1]);
-                    }
-                    else if (c == (cellColumnCount-1)) {                       //bottom right corner
-                        grid[c][r].moveToNeighbors.add(grid[c-1][r-1]);
-                        grid[c][r].moveToNeighbors.add(grid[0][r-1]);
-                    }
-                }                                                           //End section
-                int neighbors = grid[c][r].moveToNeighbors.size();
-                for(int n = 0; n < neighbors; n++) {
-                    if(((GridCell)grid[c][r].moveToNeighbors.get(n)).color.equals(freshBlue)) {              //This section creates neighbor lists for species based on
-                        grid[c][r].moveToRiverNeighbors.add(grid[c][r].moveToNeighbors.get(n));              //whether they can live in land, sea, and/or freshwater
-                    }
-                    else if(((GridCell)grid[c][r].moveToNeighbors.get(n)).color.equals(oceanBlue)) {
-                        grid[c][r].moveToOceanNeighbors.add(grid[c][r].moveToNeighbors.get(n));
-                    }
-                    else if(((GridCell)grid[c][r].moveToNeighbors.get(n)).color.equals(landGreen)) {
-                        grid[c][r].moveToLandNeighbors.add(grid[c][r].moveToNeighbors.get(n));
-                    }
-                }
-                //System.out.println(grid[c][r].moveToOceanNeighbors.size());
-            }
-        }
-    }
-
-/*    public void placeInitialSpecies() {
-        int startX = (int)Math.floor(Math.random() * (cellColumnCount));
-        int startY = (int)Math.floor(cellRowCount/2);
-        int xMod = 0;
-        while (!grid[startX + xMod][startY].color.equals(oceanBlue)) {
-            xMod++;
-            if (startX + xMod >= cellColumnCount) {startX = 0; xMod = 0;}
-        }
-        globalSpeciesList.add(firstSpecies);
-        grid[startX + xMod][startY].speciesPresent.add(firstSpecies);
-        grid[startX + xMod][startY].colonies.add(firstColony);
-        grid[startX + xMod][startY].changeCellColor(Color.red);
-        startingCell = grid[startX + xMod][startY];
-        startCellX = (startX + xMod);
-        startCellY = (startY);
-        System.out.println((startX + xMod) + " " + startY);
-        System.out.println(grid[startX + xMod][startY].speciesPresent);
-        System.out.println(globalSpeciesList);
-    }*/
-
-   /* public void evolve() {
-        for(int c=0; c<cellColumnCount; c++) {
-            for (int r = 0; r < cellRowCount; r++) {
-                if (grid[c][r].speciesPresent.size() > 0) {            //will only do something if there are actually species present
-                    int L = grid[c][r].speciesPresent.size();
-                    //System.out.println("maxtemp " + grid[c][r].maxTemp + " mintemp " + grid[c][r].minTemp + " L " + L + " C " + c + " R " + r);
-                    for (int l = 0; l < L; l++) {
-                        //System.out.println(L);
-                        //((Colony)grid[c][r].colonies.get(l)).nextTotalNumber = ((Colony)grid[c][r].colonies.get(l)).totalNumber;
-                        //System.out.println(((Colony)grid[c][r].speciesPresent.get(l)).nextTotalNumber + " og total: " + ((Colony)grid[c][r].speciesPresent.get(l)).totalNumber);
-                        double tempDifHigh = (grid[c][r].maxTemp - ((Colony) grid[c][r].colonies.get(l)).typeSpecies.idealTempHigh);     //THIS SECTION CALCULATING NEXT POP LEVEL
-                        if (tempDifHigh < 0) {
-                            tempDifHigh = 0;
-                        }
-                        double tempDifLow = (((Colony) grid[c][r].colonies.get(l)).typeSpecies.idealTempLow - grid[c][r].minTemp);
-                        if (tempDifLow < 0) {
-                            tempDifLow = 0;
-                        }
-                        double tempDif = tempDifHigh + tempDifLow;                  //this and above calculating how far from ideal the temperature is
-                        if (tempDif > 10) {
-                            tempDif = 10;
-                        }                           //10 degrees total outside of ideal range combined on either side of the range is the max before a species will be unable to survive there
-                        double trillion = 1000000000000.0;
-                        double nextPopNum = ((trillion/L) * Species.findFood(((Colony) grid[c][r].colonies.get(l)).typeSpecies) * (5 - (((Colony) grid[c][r].colonies.get(l)).typeSpecies.osmoNumber)) / 100) * (1 - (tempDif / 10)); //final part calculates penalty for being outside of ideal temp range
-                        // trill is arbitrary max pop limit w/ perfect conditions | (.01 + (maxSpeed(0) * .005)) | 5 represents max ATP produced by anaerobic species | 100 represents max ATP that can be produced per food unit (aerobic)
-                        //above formula only works for lithotrophic species
-                        if (grid[c][r].newSpeciesPresent) {
-                            ((Colony)grid[c][r].colonies.get(l)).reproNumber = nextPopNum;
-                        }
-                        //System.out.println("nextPopNum: " + nextPopNum);
-                        double totalNum = ((Colony) grid[c][r].colonies.get(l)).totalNumber;
-                        //System.out.println(nextPopNum);
-                        if (nextPopNum > totalNum) {   //if nextpop is 100 and totalnum is 99, make sure that it caps at 100 and doesn't double to 198
-                            ((Colony) grid[c][r].colonies.get(l)).currentMigration += ((Colony) grid[c][r].colonies.get(l)).typeSpecies.migration;
-                            //System.out.println(baseTotalNumber);
-                            if (grid[c][r].color.equals(oceanBlue) || grid[c][r].color.equals(freshBlue) || grid[c][r].color.equals(Color.red)) { //DELETE RED!!!!!!!! USE TRUECOLOR
-                                ((Colony) grid[c][r].colonies.get(l)).currentMigration += 10;
-                            }
-                            if (((Colony) grid[c][r].colonies.get(l)).currentMigration >= 10) {
-                                ((Colony) grid[c][r].colonies.get(l)).currentMigration %= 10;      //Eventually gotta see if it's 20 or above that they migrate multiple squares away
-
-                                double migratePop = Math.round(totalNum * 0.25);         //EVENTUALLY MAKE MIGRATE POP % HIGHER FOR HIGHER % OF NEXTPOPNUM TAKEN UP, LOWER FOR SMALL POPULATIONS
-                                double growPop = Math.round(totalNum * 0.75);
-                                //System.out.println("Next Total Number: " + growPop);
-                                ((Colony) grid[c][r].colonies.get(l)).nextTotalNumber += growPop;     //This grows target species in current cell
-                                if (((Colony) grid[c][r].colonies.get(l)).nextTotalNumber > nextPopNum) {
-                                    ((Colony) grid[c][r].colonies.get(l)).nextTotalNumber = nextPopNum;
-                                }
-                                int viableNeighborNum = 0;
-                                if (((Species) grid[c][r].speciesPresent.get(l)).home == "saltwater") {
-                                    viableNeighborNum = grid[c][r].moveToOceanNeighbors.size();
-                                }
-                                double migratePopFinal = 0;
-                                if (viableNeighborNum > 0) {
-                                    migratePopFinal = Math.round(migratePop / viableNeighborNum);
-                                }       //Decides how many will migrate to each viable adjacent cell
-                                //if (migratePopFinal > 0) {System.out.println(migratePopFinal);}
-                                for (int n = 0; n < viableNeighborNum; n++) {                                                //loop through number of neighbors
-                                    if (((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).speciesPresent.contains(grid[c][r].speciesPresent.get(l))) {
-                                        int targetSpeciesIndex = ((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).speciesPresent.indexOf(grid[c][r].speciesPresent.get(l));
-                                        ((Colony) ((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).colonies.get(targetSpeciesIndex)).nextTotalNumber += migratePopFinal;
-                                    }
-                                    else if (!((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).speciesPresent.contains((grid[c][r].speciesPresent.get(l))) && !((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).nextPhaseSpecies.contains((grid[c][r].speciesPresent.get(l))) && migratePopFinal > 0) {
-                                        if ((((GridCell)grid[c][r].moveToOceanNeighbors.get(n)).speciesPresent.size() + ((GridCell)grid[c][r].moveToOceanNeighbors.get(n)).nextPhaseSpecies.size())>= 5) {
-                                            int currentSpeciesNum = ((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).speciesPresent.size();
-                                            int nextSpeciesNum = ((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).nextPhaseSpecies.size();
-                                            for (int blah = 0; blah <= ((currentSpeciesNum + nextSpeciesNum) - 5); blah++) {    //THIS LINE IS WHAT YOU ADDED!!!!!!!!!!!!!!!!!!!!!!!
-                                                double tempDifHighN = (((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).maxTemp - ((Colony) grid[c][r].colonies.get(l)).typeSpecies.idealTempHigh);     //THIS SECTION CALCULATING NEXT POP LEVEL
-                                                if (tempDifHighN < 0) {
-                                                    tempDifHighN = 0;
-                                                }
-                                                double tempDifLowN = (((Colony) grid[c][r].colonies.get(l)).typeSpecies.idealTempLow - ((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).minTemp);
-                                                if (tempDifLowN < 0) {
-                                                    tempDifLowN = 0;
-                                                }
-                                                double tempDifN = tempDifHighN + tempDifLowN;                  //this and above calculating how far from ideal the temperature is
-                                                if (tempDifN > 10) {
-                                                    tempDifN = 10;
-                                                }                           //10 degrees total outside of ideal range combined on either side of the range is the max before a species will be unable to survive there
-                                                double spreadingSpeciesReproNum = ((trillion / ((((GridCell) (grid[c][r].moveToOceanNeighbors).get(n)).speciesPresent.size()) + 1)) * Species.findFood(((Colony) grid[c][r].colonies.get(l)).typeSpecies) * (5 - (((Colony) grid[c][r].colonies.get(l)).typeSpecies.osmoNumber)) / 100) * (1 - (tempDifN / 10));
-                                                //+1 helps figure out repro rate as if the species was already in that cell
-                                                //System.out.println("LOOK HERE SPECIES SPREAD GROWTH!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-                                                double lowestReproRate = trillion;
-                                                Species throwAwaySpecies = new Species("Why are you so fickle, Java?", 70);
-                                                Colony fuckedSpecies = new Colony(throwAwaySpecies, 0);
-                                                for (int i = 0; i < ((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).speciesPresent.size(); i++) {
-                                                    if (((Colony) ((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).colonies.get(i)).reproNumber < lowestReproRate) {
-                                                        fuckedSpecies = ((Colony) ((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).colonies.get(i));
-                                                        lowestReproRate = ((Colony) ((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).colonies.get(i)).reproNumber;
-                                                    }
-                                                }
-                                                if (spreadingSpeciesReproNum < lowestReproRate) {
-                                                    newSpeciesViable = false;
-                                                } else {
-                                                    fuckedSpecies.fucked = true;
-                                                }
-                                                if (newSpeciesViable) {
-                                                    for (int sp = 0; sp < ((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).colonies.size(); sp++) {
-                                                        if (((Colony) ((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).colonies.get(sp)).fucked) {
-                                                            //System.out.println(((Colony)((GridCell)grid[c][r].moveToOceanNeighbors.get(n)).colonies.get(sp)).typeSpecies.name);
-                                                            //System.out.println(((Species)((GridCell)grid[c][r].moveToOceanNeighbors.get(n)).speciesPresent.get(sp)).name);
-                                                            //System.out.println(((GridCell)grid[c][r].moveToOceanNeighbors.get(n)).getX()/7);
-                                                            //System.out.println(((GridCell)grid[c][r].moveToOceanNeighbors.get(n)).getY()/7);
-                                                            //System.out.println(((GridCell)grid[c][r].moveToOceanNeighbors.get(n)).colonies.size());
-                                                            ((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).colonies.remove(sp);
-                                                            ((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).speciesPresent.remove(sp);
-                                                            //System.out.println(((GridCell)grid[c][r].moveToOceanNeighbors.get(n)).colonies.size());
-                                                            //System.out.println(((Colony)((GridCell)grid[c][r].moveToOceanNeighbors.get(n)).colonies.get(sp)).typeSpecies.name);
-                                                            //System.out.println(((Species)((GridCell)grid[c][r].moveToOceanNeighbors.get(n)).speciesPresent.get(sp)).name);
-                                                            //System.out.println("This section actually went off 111");
-                                                        }
-                                                    }
-                                                    ((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).nextPhaseSpecies.add(grid[c][r].speciesPresent.get(l));
-                                                    ((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).colonies.add(new Colony((Species) grid[c][r].speciesPresent.get(l), migratePopFinal));
-                                                    ((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).newSpeciesPresent = true;
-                                                    ((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).changeCellColor(Color.red);
-                                                    //l--;
-                                                }
-                                                newSpeciesViable = true;
-                                            }
-                                        }
-                                        else {
-                                            ((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).nextPhaseSpecies.add(grid[c][r].speciesPresent.get(l));
-                                            ((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).colonies.add(new Colony((Species) grid[c][r].speciesPresent.get(l), migratePopFinal));
-                                            ((GridCell)grid[c][r].moveToOceanNeighbors.get(n)).newSpeciesPresent = true;
-                                            ((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).changeCellColor(Color.red);
-                                        }
-                                    }
-                                }
-                            }
-                            else if (((Colony) grid[c][r].colonies.get(l)).currentMigration < 10) {
-                                ((Colony) grid[c][r].colonies.get(l)).nextTotalNumber += totalNum;
-                                if (((Colony) grid[c][r].colonies.get(l)).nextTotalNumber > nextPopNum) {
-                                    ((Colony) grid[c][r].colonies.get(l)).nextTotalNumber = nextPopNum;
-                                }
-                            }
-                        }
-                        else if (nextPopNum <= totalNum) {
-                            double reducedPopNumber = (totalNum - nextPopNum);
-                            ((Colony) grid[c][r].colonies.get(l)).currentMigration += ((Colony) grid[c][r].colonies.get(l)).typeSpecies.migration;
-                            if (grid[c][r].color.equals(oceanBlue) || grid[c][r].color.equals(freshBlue) || grid[c][r].color.equals(Color.red)) { //DELETE RED!!!!!!!! USE TRUECOLOR
-                                ((Colony) grid[c][r].colonies.get(l)).currentMigration += 10;
-                            }
-                            if (((Colony) grid[c][r].colonies.get(l)).currentMigration >= 10) {
-                                ((Colony) grid[c][r].colonies.get(l)).currentMigration %= 10;      //Eventually gotta see if it's 20 or above that they migrate multiple squares away
-                                ((Colony) grid[c][r].colonies.get(l)).nextTotalNumber -= reducedPopNumber;
-                                if (((Colony) grid[c][r].colonies.get(l)).nextTotalNumber < 0) {((Colony) grid[c][r].colonies.get(l)).nextTotalNumber = 0;}
-                                double migratePop = Math.round(reducedPopNumber * 0.25);
-                                int viableNeighborNum = 0;
-                                if (((Species) grid[c][r].speciesPresent.get(l)).home == "saltwater") {
-                                    viableNeighborNum = grid[c][r].moveToOceanNeighbors.size();
-                                }
-                                double migratePopFinal = 0;
-                                if (viableNeighborNum > 0) {
-                                    migratePopFinal = Math.round(migratePop / viableNeighborNum);
-                                }
-                                for (int n = 0; n < viableNeighborNum; n++) {                                                //loop through number of neighbors
-                                    if (((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).speciesPresent.contains(grid[c][r].speciesPresent.get(l))) {
-                                        int targetSpeciesIndex = ((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).speciesPresent.indexOf(grid[c][r].speciesPresent.get(l));
-                                        ((Colony) ((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).colonies.get(targetSpeciesIndex)).nextTotalNumber += migratePopFinal;
-                                    }
-                                    else if (!((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).speciesPresent.contains((grid[c][r].speciesPresent.get(l))) && !((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).nextPhaseSpecies.contains((grid[c][r].speciesPresent.get(l))) && migratePopFinal > 0) {
-                                        if ((((GridCell)grid[c][r].moveToOceanNeighbors.get(n)).speciesPresent.size() + ((GridCell)grid[c][r].moveToOceanNeighbors.get(n)).nextPhaseSpecies.size())>= 5) {
-                                            int currentSpeciesNum = ((GridCell)grid[c][r].moveToOceanNeighbors.get(n)).speciesPresent.size();
-                                            int nextSpeciesNum = ((GridCell)grid[c][r].moveToOceanNeighbors.get(n)).nextPhaseSpecies.size();
-                                            for (int blah = 0; blah <= ((currentSpeciesNum + nextSpeciesNum) - 5); blah++) {    //THIS LINE IS WHAT YOU ADDED!!!!!!!!!!!!!!!!!!!!!!!
-                                                double tempDifHighN = (((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).maxTemp - ((Colony) grid[c][r].colonies.get(l)).typeSpecies.idealTempHigh);     //THIS SECTION CALCULATING NEXT POP LEVEL
-                                                if (tempDifHighN < 0) {
-                                                    tempDifHighN = 0;
-                                                }
-                                                double tempDifLowN = (((Colony) grid[c][r].colonies.get(l)).typeSpecies.idealTempLow - ((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).minTemp);
-                                                if (tempDifLowN < 0) {
-                                                    tempDifLowN = 0;
-                                                }
-                                                double tempDifN = tempDifHighN + tempDifLowN;                  //this and above calculating how far from ideal the temperature is
-                                                if (tempDif > 10) {
-                                                    tempDif = 10;
-                                                }                           //10 degrees total outside of ideal range combined on either side of the range is the max before a species will be unable to survive there
-                                                double spreadingSpeciesReproNum = ((trillion / (((GridCell) (grid[c][r].moveToOceanNeighbors).get(n)).speciesPresent.size())) * Species.findFood(((Colony) grid[c][r].colonies.get(l)).typeSpecies) * (5 - (((Colony) grid[c][r].colonies.get(l)).typeSpecies.osmoNumber)) / 100) * (1 - (tempDifN / 10));
-
-                                                //System.out.println("LOOK HERE SPECIES SPREAD DIE OFF!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-                                                double lowestReproRate = trillion;
-                                                Species throwAwaySpecies = new Species("Why are you so fickle, Java?", 70);
-                                                Colony fuckedSpecies = new Colony(throwAwaySpecies, 0);
-                                                for (int i = 0; i < ((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).speciesPresent.size(); i++) {             //This shit finds the lowest repro rate to eliminate a species
-                                                    if (((Colony) ((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).colonies.get(i)).reproNumber < lowestReproRate) {
-                                                        fuckedSpecies = ((Colony) ((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).colonies.get(i));
-                                                        lowestReproRate = ((Colony) ((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).colonies.get(i)).reproNumber;
-                                                    }
-                                                }
-                                                if (spreadingSpeciesReproNum < lowestReproRate) {
-                                                    newSpeciesViable = false;
-                                                } else {
-                                                    fuckedSpecies.fucked = true;
-                                                }
-                                                if (newSpeciesViable) {
-                                                    for (int sp = 0; sp < ((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).colonies.size(); sp++) {
-                                                        if (((Colony) ((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).colonies.get(sp)).fucked) {
-                                                            ((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).colonies.remove(sp);
-                                                            ((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).speciesPresent.remove(sp);
-                                                            //System.out.println("This section actually went off 222");
-                                                        }
-                                                    }
-                                                    ((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).nextPhaseSpecies.add(grid[c][r].speciesPresent.get(l));
-                                                    ((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).colonies.add(new Colony((Species) grid[c][r].speciesPresent.get(l), migratePopFinal));
-                                                    ((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).newSpeciesPresent = true;
-                                                    ((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).changeCellColor(Color.red);
-                                                    //l--;
-                                                }
-                                                newSpeciesViable = true;
-                                            }
-                                        }
-                                        else {
-                                            ((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).nextPhaseSpecies.add(grid[c][r].speciesPresent.get(l));
-                                            ((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).colonies.add(new Colony((Species) grid[c][r].speciesPresent.get(l), migratePopFinal));
-                                            ((GridCell)grid[c][r].moveToOceanNeighbors.get(n)).newSpeciesPresent = true;
-                                            ((GridCell) grid[c][r].moveToOceanNeighbors.get(n)).changeCellColor(Color.red);
-                                        }
-                                    }
-                                }
-                            }
-                            else if (((Colony) grid[c][r].colonies.get(l)).currentMigration < 10) {
-                                ((Colony) grid[c][r].colonies.get(l)).nextTotalNumber -= reducedPopNumber;
-                            }
-                        }
-                    }
-                    grid[c][r].newSpeciesPresent = false;
-                }
-            }
-        }
-        for(int c=0; c<cellColumnCount; c++) {                  //THIS SECTION ASSIGNS NEXTNUMBERS TO CURRENTNUMBERS. ALSO IN CHARGE OF EVOLVING NEXT SPECIES.
-            for (int r = 0; r < cellRowCount; r++) {
-                if (grid[c][r].speciesPresent.size() > 0) {            //will only do something if there are actually species present
-                    for (int l = 0; l < grid[c][r].speciesPresent.size(); l++) {
-                        ((Colony) grid[c][r].colonies.get(l)).totalNumber = ((Colony) grid[c][r].colonies.get(l)).nextTotalNumber;
-                        if (((Colony) grid[c][r].colonies.get(l)).totalNumber < 0) {
-                            System.out.println(((Colony)grid[c][r].colonies.get(l)).typeSpecies.name + ": " + ((Colony) grid[c][r].colonies.get(l)).totalNumber + "C: " + c + " R: " + r);
-                        }
-                        int targetSpeciesNumber = 0;
-                        try {
-                            targetSpeciesNumber = globalSpeciesList.indexOf(grid[c][r].speciesPresent.get(l));
-                        }
-                        catch (java.lang.IndexOutOfBoundsException e) {
-                            System.out.println("l: " + l + " SpeciesPresentSize: " + grid[c][r].speciesPresent.size());
-                        }
-                        //System.out.println(((Species)globalSpeciesList.get(targetSpeciesNumber)).evoNum);
-                        ((Species)globalSpeciesList.get(targetSpeciesNumber)).evoNum += ((Colony) grid[c][r].colonies.get(l)).totalNumber;
-                        long trill = 1000000000000L;
-                        //if (((Species)globalSpeciesList.get(targetSpeciesNumber)).evoNum > trill) {System.out.println(((Species)globalSpeciesList.get(targetSpeciesNumber)).evoNum);}
-                        //System.out.println(((Species)globalSpeciesList.get(targetSpeciesNumber)).evoNum);
-                        if (((Species)globalSpeciesList.get(targetSpeciesNumber)).evoNum >= (trill/10)) {
-                            ((Species)globalSpeciesList.get(targetSpeciesNumber)).evoNum %= (trill/10);         //THE DIVISION PART NEEDS TO BE DELETED
-                            specieTraits = new ArrayList();                                            //Can build off of this, does nothing now
-                            double lowTempVar = ((Species)grid[c][r].speciesPresent.get(l)).idealTempLow;
-                            lowTempVar -= 1;
-                            String newSpeciesName = "The First One" + speciesNumber;
-                            Species tempSpeciesHolder = new Species(newSpeciesName, lowTempVar);
-
-
-                            double tempDifHigh = (grid[c][r].maxTemp - (tempSpeciesHolder.idealTempHigh));
-                            if (tempDifHigh < 0) {
-                                tempDifHigh = 0;
-                            }
-                            double tempDifLow = (tempSpeciesHolder.idealTempLow - grid[c][r].minTemp);
-                            if (tempDifLow < 0) {
-                                tempDifLow = 0;
-                            }
-                            double tempDif = tempDifHigh + tempDifLow;                  //this and above calculating how far from ideal the temperature is
-                            if (tempDif > 10) {
-                                tempDif = 10;
-                            }
-                            double trillion = 1000000000000.0;
-                            double newSpeciesReproNum = ((trillion/(grid[c][r].speciesPresent.size())) * Species.findFood(tempSpeciesHolder) * (5 - tempSpeciesHolder.osmoNumber) / 100) * (1 - (tempDif / 10));
-
-
-                            addSpecies = 0;
-                            for (int g = 0; g < globalSpeciesList.size(); g++) {        //This is just making sure no other species with the same stats exists
-                                //System.out.println(((Species)globalSpeciesList.get(g)).idealTempLow + " " + lowTempVar);
-                                if (((Species)globalSpeciesList.get(g)).idealTempLow == lowTempVar) {
-                                    addSpecies++;
-                                }
-                                //System.out.println(addSpecies);
-                            }
-                            if (addSpecies == 0) {
-                                //System.out.println("Yo is this shit even workin");
-                                if ((grid[c][r].speciesPresent.size() + grid[c][r].nextPhaseSpecies.size())>= 5) {
-                                    int currentSpeciesNum = grid[c][r].speciesPresent.size();
-                                    int nextSpeciesNum = grid[c][r].nextPhaseSpecies.size();
-                                    for (int blah = 0; blah <= ((currentSpeciesNum + nextSpeciesNum) - 5); blah++) {    //THIS LINE IS WHAT YOU ADDED!!!!!!!!!!!!!!!!!!!!!!!
-                                        //System.out.println("LOOK HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-
-                                        double lowestReproRate = trill;
-                                        Species throwAwaySpecies = new Species("Why are you so fickle, Java?", 70);
-                                        Colony fuckedSpecies = new Colony(throwAwaySpecies, 0);
-                                        for (int i = 0; i < grid[c][r].speciesPresent.size(); i++) {
-                                            if (((Colony) grid[c][r].colonies.get(i)).reproNumber < lowestReproRate) {
-                                                fuckedSpecies = ((Colony) grid[c][r].colonies.get(i));
-                                                lowestReproRate = ((Colony) grid[c][r].colonies.get(i)).reproNumber;
-                                            }
-                                        }
-                                        if (newSpeciesReproNum < lowestReproRate) {
-                                            newSpeciesViable = false;
-                                        } else {
-                                            fuckedSpecies.fucked = true;
-                                        }
-                                        //System.out.println("newSpeciesReproNum: " + newSpeciesReproNum + " lowestReproRate: " + lowestReproRate);
-                                        //System.out.println(newSpeciesViable);
-                                        if (newSpeciesViable) {
-                                            for (int sp = 0; sp < grid[c][r].colonies.size(); sp++) {
-                                                if (((Colony) grid[c][r].colonies.get(sp)).fucked) {
-                                                    grid[c][r].colonies.remove(sp);
-                                                    grid[c][r].speciesPresent.remove(sp);
-                                                    //if (grid[c][r].speciesPresent.size() > 0) {l--; System.out.println(l + "----------------------------");}
-                                                    //System.out.println("This section actually went off 333");
-                                                }
-                                            }
-                                            globalSpeciesList.add(tempSpeciesHolder);
-                                            grid[c][r].nextPhaseSpecies.add(tempSpeciesHolder);
-                                            Colony tempColony = new Colony(tempSpeciesHolder, 100);
-                                            grid[c][r].colonies.add(tempColony);
-                                            speciesNumber++;
-                                            grid[c][r].newSpeciesPresent = true;
-                                            System.out.println("An evolution has occurred at x: " + c + " y: " + r);
-                                        }
-                                        newSpeciesViable = true;
-                                    }
-                                }
-                                else {
-                                    globalSpeciesList.add(tempSpeciesHolder);
-                                    grid[c][r].nextPhaseSpecies.add(tempSpeciesHolder);
-                                    Colony tempColony = new Colony(tempSpeciesHolder, 100);
-                                    grid[c][r].colonies.add(tempColony);
-                                    speciesNumber++;
-                                    grid[c][r].newSpeciesPresent = true;
-                                    System.out.println("An evolution has occurred at x: " + c + " y: " + r);
-                                }
-                            }
-                        }
-                        if (((Colony) grid[c][r].colonies.get(l)).totalNumber == 0) {
-                            //System.out.println("l: " + l + " grid[c][r].colonies.size(): " + grid[c][r].colonies.size());
-                            grid[c][r].colonies.remove(l);
-                            grid[c][r].speciesPresent.remove(l);
-                            //System.out.println("l: " + l + " grid[c][r].colonies.size(): " + grid[c][r].colonies.size());
-                            //if (grid[c][r].colonies.size() > 0) {System.out.println(l); l--; System.out.println(l + "+++++++++++++++++++++++++++++++++++++++++++++++");}
-                            //System.out.println("l: " + l + " grid[c][r].colonies.size(): " + grid[c][r].colonies.size());
-                        }
-                    }
-                }
-                if (grid[c][r].nextPhaseSpecies.size() > 0) {                            //This shit switches over the nextPhaseSpecies to the speciesPresent list
-                    int nextPhaseSpeciesSize = grid[c][r].nextPhaseSpecies.size();
-                    for (int s=0; s<nextPhaseSpeciesSize; s++) {
-                        grid[c][r].speciesPresent.add(grid[c][r].nextPhaseSpecies.get(s));
-                    }
-                    grid[c][r].nextPhaseSpecies.clear();
-                }
-                //if (grid[c][r].speciesPresent.size() > 5) {System.out.println("WHOA THERE BUCKAROOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO" + c + " " + r);}
-                if (grid[c][r].speciesPresent.size() == 0) {grid[c][r].color = grid[c][r].trueColor;}
-            }
-        }
-        for (int i = 0; i < globalSpeciesList.size(); i++) {System.out.println(((Species)globalSpeciesList.get(i)).name + ": " + ((Species)globalSpeciesList.get(i)).evoNum);}
-        for (int i = 0; i < globalSpeciesList.size(); i++) {
-            if (((Species)globalSpeciesList.get(i)).evoNum == 0) {
-                ((Species)globalSpeciesList.get(i)).speciesDead++;
-                if (((Species)globalSpeciesList.get(i)).speciesDead > 1) {
-                    globalSpeciesList.remove(i);
-                    i--;
-                }
-            }
-            if (((Species)globalSpeciesList.get(i)).evoNum > 0 && ((Species)globalSpeciesList.get(i)).speciesDead > 0) {
-                ((Species)globalSpeciesList.get(i)).speciesDead = 0;
-            }
-        }
-        System.out.println("Q presses = " + qPress);
-        qPress++;
-        if (qPress == 285) {
-            System.out.println(qPress);
-        }
-        System.out.println("---------------------");
-        //spreads++;
-        //if (spreads > 4) {
-        repaint();
-        //System.out.println(((Colony)startingCell.colonies.get(0)).totalNumber);
-        //System.out.println(((Colony)startingCell.colonies.get(0)).currentMigration);
-        //System.out.println(((Colony)grid[startCellX][startCellY+15].colonies.get(0)).totalNumber);
-        //System.out.println(((Colony)grid[startCellX][startCellY+16].colonies.get(0)).totalNumber);
-        //System.out.println(((Colony)grid[startCellX][startCellY+17].colonies.get(0)).totalNumber);
-        *//*System.out.println(startingCell.moveToOceanNeighbors);
-        System.out.println(grid[startCellX+1][startCellY+1].moveToOceanNeighbors);
-        System.out.println(grid[startCellX+1][startCellY].moveToOceanNeighbors);
-        System.out.println(grid[startCellX+2][startCellY].moveToOceanNeighbors);
-        System.out.println(grid[startCellX+3][startCellY].moveToOceanNeighbors);*//* //}
-    }*/
-
     public void paintComponent(Graphics g){
         setBackground(Color.BLACK);
         Graphics2D g2 = (Graphics2D)g;
@@ -3580,18 +2995,5 @@ public class Grid extends JPanel{
             g.setColor(Color.white);
             g.drawString("0%", 259, 612);
         }
-
-        /*final int SIZE = 36;
-        String message = "kill me";
-        Font hugeFont = new Font("SansSerif", Font.BOLD, SIZE);
-        g.setFont(hugeFont);
-        g.setColor(Color.pink);
-        g.drawString(message, 25, 600);
-        FontRenderContext context = g2.getFontRenderContext();
-        Rectangle2D bounds = hugeFont.getStringBounds(message, context);
-        double yMessageAscent = -bounds.getY();
-        double yMessageDescent = bounds.getHeight() + bounds.getY();
-        double yMessageHeight = bounds.getHeight();
-        double xMessageWidth = bounds.getWidth();*/
     }
 }

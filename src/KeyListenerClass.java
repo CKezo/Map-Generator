@@ -79,9 +79,6 @@ public class KeyListenerClass extends Grid implements KeyListener{
                 windComesFrom = "west";
             }
         }
-        if(e.getKeyChar() == 'q') {
-            //Main.gameGrid.evolve();
-        }
     }
     public void keyPressed(KeyEvent e) {}
     public void keyReleased(KeyEvent e) {}

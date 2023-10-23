@@ -19,7 +19,6 @@ public class Main extends JFrame{
         this.addMouseListener(theMouseListener);
         theMouseListener.setFocusable(true);
         add(theMouseListener);
-        //setVisible(true);
     }
     public static Grid gameGrid;
     public static Main frame = new Main();
@@ -27,19 +26,28 @@ public class Main extends JFrame{
         gameGrid = new Grid();
         gameGrid.islandPlacer();
         gameGrid.lakePlacer();
+        //you removed the water part of the add noise, uncomment when you calibrate addnoise for land properly
+        //also, the islandMaker needs to not allow straight diagonal lines. Always need a lil bit of curve.
+        gameGrid.addNoise();
+        gameGrid.addNoise();
+        gameGrid.addNoise();
+        gameGrid.addNoise();
+        gameGrid.addNoise();
+        gameGrid.addNoise();
+        gameGrid.addNoise();
+        gameGrid.addNoise();
+        gameGrid.addNoise();
+        gameGrid.addNoise();
+        gameGrid.addNoise();
         gameGrid.addNoise();
         gameGrid.defineCoasts();
         gameGrid.mountainPlacer();
         gameGrid.riverPlacer();
         gameGrid.storeTrueColor();
         gameGrid.defineWaterAvail("west");
-        gameGrid.defineMoveToNeighbors();
-        //gameGrid.placeInitialSpecies();
         frame.add(gameGrid);
         frame.setVisible(true);
-        /*for (int i = 0; i < 286; i++) {
-            gameGrid.evolve();
-        }*/
+
         //System.out.println(frame.getInsets());      LET'S YOU KNOW HOW MUCH THE FRAME OFFSETS THE PANEL
     }
     public static void main(String[] args) {
