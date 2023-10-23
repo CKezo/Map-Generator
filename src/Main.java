@@ -4,7 +4,7 @@ import java.awt.*;
 public class Main extends JFrame{
     private static final int WIDTH = 1200;
     private static final int HEIGHT = 700;
-    //hi
+
     public Main() {
         setPreferredSize(new Dimension(WIDTH, HEIGHT));
         setMinimumSize(new Dimension(WIDTH, HEIGHT));
