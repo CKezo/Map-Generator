@@ -10,6 +10,7 @@ public class Main extends JFrame{
         setMinimumSize(new Dimension(WIDTH, HEIGHT));
         setResizable(false);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLayout(new BorderLayout());
         setLocationRelativeTo(null);
         KeyListenerClass theKeyListener = new KeyListenerClass();
         theKeyListener.addKeyListener(theKeyListener);
@@ -24,10 +25,12 @@ public class Main extends JFrame{
     public static Main frame = new Main();
     public static void newMap() {
         gameGrid = new Grid();
+        //gameGrid.setLayout(new BorderLayout());
         gameGrid.islandPlacer();
         gameGrid.lakePlacer();
         //you removed the water part of the add noise, uncomment when you calibrate addnoise for land properly
         //also, the islandMaker needs to not allow straight diagonal lines. Always need a lil bit of curve.
+        //the inset of the game window needs to adjust, not be a solid number.
         gameGrid.addNoise();
         gameGrid.addNoise();
         gameGrid.addNoise();
@@ -48,7 +51,7 @@ public class Main extends JFrame{
         frame.add(gameGrid);
         frame.setVisible(true);
 
-        //System.out.println(frame.getInsets());      LET'S YOU KNOW HOW MUCH THE FRAME OFFSETS THE PANEL
+        System.out.println(frame.getInsets());      //LET'S YOU KNOW HOW MUCH THE FRAME OFFSETS THE PANEL
     }
     public static void main(String[] args) {
         newMap();
