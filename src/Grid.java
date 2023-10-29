@@ -4,26 +4,30 @@ import java.lang.Math;
 
 
 public class Grid extends JPanel{
-    private final int cellColumnCount = 250;   //125
-    private final int cellRowCount = 125;  //80
-    public final int cellWidth = 3; //7
-    public final int cellHeight = 3; //7
+    public static final int cellColumnCount = 250;   //125
+    public static final int cellRowCount = 125;  //80
+    public static final int cellWidth = 4; //7
+    public static final int cellHeight = 4; //7
+    public static int leftInset = 0;
+    public static int topInset = 0;
+    public static final int topBlackspace = 20;
+    public static final int leftBlackspace = 20;
 
     public GridCell[][] grid = new GridCell[cellColumnCount][cellRowCount];
 
-    private final Color landGreen = new Color(0, 183, 0);
-    private final Color oceanBlue = new Color(16, 0, 204);
-    private final Color freshBlue = new Color(0, 0, 255);
-    private final Color mountainWhite = new Color(221,221,221);
-    private final Color tropicalRainforest = new Color(0, 96, 6);
-    private final Color tropicalSeasonalRain = new Color(0, 255, 128);
-    private final Color temperateRainforest = new Color(0, 130, 95);
-    private final Color temperateDeciduous = new Color(0, 204, 0);
-    private final Color temperateGrassland = new Color(114, 255, 0);
-    private final Color desert = new Color(255, 67, 0);
-    private final Color savanna = new Color(255, 199, 0);
-    private final Color tundra = new Color(0, 255, 255);
-    private final Color taiga = new Color(0, 170, 255);
+    public final Color landGreen = new Color(0, 183, 0);
+    public static final Color oceanBlue = new Color(0, 35, 150);
+    public final Color freshBlue = new Color(0, 0, 255);
+    public final Color mountainWhite = new Color(221,221,221);
+    public final Color tropicalRainforest = new Color(0, 96, 6);
+    public final Color tropicalSeasonalRain = new Color(0, 255, 128);
+    public final Color temperateRainforest = new Color(0, 130, 95);
+    public final Color temperateDeciduous = new Color(0, 204, 0);
+    public final Color temperateGrassland = new Color(114, 255, 0);
+    public final Color desert = new Color(255, 67, 0);
+    public final Color savanna = new Color(255, 199, 0);
+    public final Color tundra = new Color(0, 255, 255);
+    public final Color taiga = new Color(0, 170, 255);
 
     private double globalAvgHigh;
     private double globalAvgLow;
@@ -46,9 +50,8 @@ public class Grid extends JPanel{
         for (int c = 0; c < cellColumnCount; c++) {
             for (int r = 0; r < cellRowCount; r++) {
                 grid[c][r] = new GridCell();
-                grid[c][r].setX(c * cellWidth);
-                grid[c][r].setY(r * cellHeight);
-                //System.out.println("X: " + grid[c][r].getX() + " Y: " + grid[c][r].getY());
+                grid[c][r].setX(c * cellWidth + leftBlackspace);
+                grid[c][r].setY(r * cellHeight + topBlackspace);
             }
         }
         defineNeighbors();
@@ -85,7 +88,8 @@ public class Grid extends JPanel{
         }
     }
 
-    public void islandMaker(double size, double variation, double trimEdge, double poleDistance) {
+    public void islandMaker(double size, double trimEdge) {
+        double point1x = 0, point1y = 0, point2x = 0, point2y = 0, point3x = 0, point3y = 0, point4x = 0, point4y = 0;
         double point12x = 0, point23x = 0, point34x = 0, point41x = 0;
         double m = 0, m1 = 0, m2 = 0, m3 = 0, m4 = 0, m5 = 0, m6 = 0, m7 = 0;
         double b = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0, b7 = 0;
@@ -93,56 +97,126 @@ public class Grid extends JPanel{
         double b0 = 0, b30 = 0, b40 = 0, b70 = 0;
         double mZ = 0, m3Z = 0, m4Z = 0, m7Z = 0;
         double bZ = 0, bZ1 = 0, b3Z = 0, b3Z1 = 0, b4Z = 0, b4Z1 = 0, b7Z = 0, b7Z1 = 0;
-        int centerX = (int) Math.floor(Math.random() * cellColumnCount);              //picks central starting point
-        int centerY = (int) Math.floor(Math.random() * (cellRowCount - poleDistance) + (poleDistance / 2));         //makes sure point not too close to poles
+        int centerX = (int) Math.floor(Math.random() * cellColumnCount);     //picks central starting point
+        int centerY = (int) Math.floor(Math.random() * (cellRowCount - size) + (size/ 2)); //Chooses points that are generally not too close to the poles
+        if (centerY > cellRowCount - size){ //Ensures point not too close to poles
+            centerY = (int)(cellRowCount - size);
+        } else if (centerY < size) {
+            centerY = (int)(size);
+        }
         grid[centerX][centerY].changeCellColor(landGreen);
 
         //below establishes the points which form the outline of our island
         //to visualize the rough location of the points on a clock, point 1 is at 12 o clock, point12 at 1:30, point2 at 3, point23 at 4:30, point3 at 6, point34 at 7:30, point4 at 9 and point41 at 10:30
-        double point1y = centerY - (Math.floor(Math.random() * size) + size);   //picks point 20-40 units away
-        if (point1y < 0) {
-            point1y = 0;
-        }          //makes sure to pick a viable point within the map
-        double point1x = centerX + ((Math.floor(Math.random() * (size / 2))) * (Math.floor(Math.random() * 2) == 1 ? 1 : -1));  //moves point to one side or another slightly for variation
-        if (point1x < 0) {
-            point1x = 0;
-        }  //this and below makes sure that X point doesn't go off one end of the map and fuck up future code
-        else if (point1x >= cellColumnCount) {
-            point1x = (cellColumnCount - 1);
-        }
+        //IMPORTANT: when messing around with numbers, make sure that the X value for points 2 and 4 can never be as close or closer to center point than X val for 1 and 3.
+        //same warning goes for making sure y of 1 and 3 are not close/closer to center than y val for 2 and 4.
 
-        double point3y = (centerY + (Math.floor(Math.random() * size) + size));
-        if (point3y >= (cellRowCount)) {
-            point3y = cellRowCount - 1;
-        }
-        double point3x = (centerX + ((Math.floor(Math.random() * (size / 2))) * (Math.floor(Math.random() * 2) == 1 ? 1 : -1)));
-        if (point3x < 0) {
-            point3x = 0;
-        } else if (point3x >= cellColumnCount) {
-            point3x = (cellColumnCount - 1);
-        }
+        int islandShapeRandomizer = (int)(Math.floor(Math.random()*3)); //0 is circlish islands, 1 is tall skinny island, 2 is short and wide island
+        if(islandShapeRandomizer == 0){
+            point1y = centerY - (Math.floor(Math.random() * size)/2 + size/2);   //Picks a point no less than size/2 spaces away from centerY but no more than size
+            if (point1y < 0) { //makes sure to pick a viable point within the map
+                point1y = 0;
+            }
+            point1x = centerX + ((Math.floor(Math.random() * (size / 3))) * ((Math.floor(Math.random() * 2) == 1) ? 1 : -1));  //moves point to one side or another slightly for variation
+            if (point1x < 0) {
+                point1x = 0;
+            }  //makes sure that X point doesn't go off one end of the map and mess up future code
+            else if (point1x >= cellColumnCount) {
+                point1x = (cellColumnCount - 1);
+            }
 
-        double point2x = (centerX + (Math.floor(Math.random() * size) + size));
-        if (point2x >= cellColumnCount) {
-            point2x = (((point2x - centerX) + (cellColumnCount - (cellColumnCount - centerX)))) % cellColumnCount;
-        }  //if point2x goes off the map one way or another, this will loop it around to the other side
-        double point2y = (centerY + ((Math.floor(Math.random() * 10)) * (Math.floor(Math.random() * 2) == 1 ? 1 : -1)));
-        if (point2y < (point1y + variation)) {
-            point2y = (point1y + variation);
-        }     //this is to make sure the island doesn't look quite so squished if the center points lands near the poles
-        else if (point2y > (point3y - variation)) {
-            point2y = (point3y - variation);
-        }
+            point3y = (centerY + (Math.floor(Math.random() * size)/2 + size/2));
+            if (point3y >= (cellRowCount)) {
+                point3y = cellRowCount - 1;
+            }
+            point3x = (centerX + ((Math.floor(Math.random() * (size / 3))) * (Math.floor(Math.random() * 2) == 1 ? 1 : -1)));
+            if (point3x < 0) {
+                point3x = 0;
+            } else if (point3x >= cellColumnCount) {
+                point3x = (cellColumnCount - 1);
+            }
 
-        double point4x = (centerX - (Math.floor(Math.random() * size) + size));
-        if (point4x < 0) {
-            point4x = ((centerX + (centerX - point4x)) + (cellColumnCount - ((centerX - point4x) * 2)));
-        }
-        double point4y = (centerY + ((Math.floor(Math.random() * 10)) * (Math.floor(Math.random() * 2) == 1 ? 1 : -1)));
-        if (point4y < (point1y + variation)) {
-            point4y = (point1y + variation);
-        } else if (point4y > (point3y - variation)) {
-            point4y = (point3y - variation);
+            point2x = (centerX + (Math.floor(Math.random() * size)/2 + size/2));
+            if (point2x >= cellColumnCount) {
+                point2x = (((point2x - centerX) + (cellColumnCount - (cellColumnCount - centerX)))) % cellColumnCount;
+            }  //if point2x goes off the map one way or another, this will loop it around to the other side
+            point2y = (centerY + ((Math.floor(Math.random() * size)/3) * (Math.floor(Math.random() * 2) == 1 ? 1 : -1)));
+
+            point4x = (centerX - (Math.floor(Math.random() * size)/2 + size/2));
+            if (point4x < 0) {
+                point4x = ((centerX + (centerX - point4x)) + (cellColumnCount - ((centerX - point4x) * 2)));
+            }
+            point4y = (centerY + ((Math.floor(Math.random() * size)/3) * (Math.floor(Math.random() * 2) == 1 ? 1 : -1)));
+        } else if (islandShapeRandomizer == 1) {
+            point1y = centerY - (Math.floor(Math.random() * size)/2 + size/2);   //Picks a point no less than size/2 spaces away from centerY but no more than size
+            if (point1y < 0) { //makes sure to pick a viable point within the map
+                point1y = 0;
+            }
+            point1x = centerX + ((Math.floor(Math.random() * (size / 5))) * ((Math.floor(Math.random() * 2) == 1) ? 1 : -1));  //moves point to one side or another slightly for variation
+            if (point1x < 0) {
+                point1x = 0;
+            }  //makes sure that X point doesn't go off one end of the map and mess up future code
+            else if (point1x >= cellColumnCount) {
+                point1x = (cellColumnCount - 1);
+            }
+
+            point3y = (centerY + (Math.floor(Math.random() * size)/2 + size/2));
+            if (point3y >= (cellRowCount)) {
+                point3y = cellRowCount - 1;
+            }
+            point3x = (centerX + ((Math.floor(Math.random() * (size / 5))) * (Math.floor(Math.random() * 2) == 1 ? 1 : -1)));
+            if (point3x < 0) {
+                point3x = 0;
+            } else if (point3x >= cellColumnCount) {
+                point3x = (cellColumnCount - 1);
+            }
+
+            point2x = (centerX + (Math.floor(Math.random() * size)/3 + size/3));
+            if (point2x >= cellColumnCount) {
+                point2x = (((point2x - centerX) + (cellColumnCount - (cellColumnCount - centerX)))) % cellColumnCount;
+            }  //if point2x goes off the map one way or another, this will loop it around to the other side
+            point2y = (centerY + ((Math.floor(Math.random() * size)/3) * (Math.floor(Math.random() * 2) == 1 ? 1 : -1)));
+
+            point4x = (centerX - (Math.floor(Math.random() * size)/3 + size/3));
+            if (point4x < 0) {
+                point4x = ((centerX + (centerX - point4x)) + (cellColumnCount - ((centerX - point4x) * 2)));
+            }
+            point4y = (centerY + ((Math.floor(Math.random() * size)/3) * (Math.floor(Math.random() * 2) == 1 ? 1 : -1)));
+        } else {
+            point1y = centerY - (Math.floor(Math.random() * size)/3 + size/3);   //Picks a point no less than size/2 spaces away from centerY but no more than size
+            if (point1y < 0) { //makes sure to pick a viable point within the map
+                point1y = 0;
+            }
+            point1x = centerX + ((Math.floor(Math.random() * (size / 3))) * ((Math.floor(Math.random() * 2) == 1) ? 1 : -1));  //moves point to one side or another slightly for variation
+            if (point1x < 0) {
+                point1x = 0;
+            }  //makes sure that X point doesn't go off one end of the map and mess up future code
+            else if (point1x >= cellColumnCount) {
+                point1x = (cellColumnCount - 1);
+            }
+
+            point3y = (centerY + (Math.floor(Math.random() * size)/3 + size/3));
+            if (point3y >= (cellRowCount)) {
+                point3y = cellRowCount - 1;
+            }
+            point3x = (centerX + ((Math.floor(Math.random() * (size / 3))) * (Math.floor(Math.random() * 2) == 1 ? 1 : -1)));
+            if (point3x < 0) {
+                point3x = 0;
+            } else if (point3x >= cellColumnCount) {
+                point3x = (cellColumnCount - 1);
+            }
+
+            point2x = (centerX + (Math.floor(Math.random() * size)/2 + size/2));
+            if (point2x >= cellColumnCount) {
+                point2x = (((point2x - centerX) + (cellColumnCount - (cellColumnCount - centerX)))) % cellColumnCount;
+            }  //if point2x goes off the map one way or another, this will loop it around to the other side
+            point2y = (centerY + ((Math.floor(Math.random() * size)/5) * (Math.floor(Math.random() * 2) == 1 ? 1 : -1)));
+
+            point4x = (centerX - (Math.floor(Math.random() * size)/2 + size/2));
+            if (point4x < 0) {
+                point4x = ((centerX + (centerX - point4x)) + (cellColumnCount - ((centerX - point4x) * 2)));
+            }
+            point4y = (centerY + ((Math.floor(Math.random() * size)/5) * (Math.floor(Math.random() * 2) == 1 ? 1 : -1)));
         }
 
         //FINDING MIDPOINTS BETWEEN POINTS 1, 2, 3, 4
@@ -152,21 +226,21 @@ public class Grid extends JPanel{
             point12x = (Math.floor((((cellColumnCount - Math.abs(point1x - point2x)) / 2) + (cellColumnCount - (cellColumnCount - point1x))) % cellColumnCount));
         }
         double difx = ((Math.max((Math.min((point12x - point1x), (point2x - point12x)) - 1), 0)) / 3);
-        difx *= Math.floor(Math.random() * 2) == 1 ? 1.25 : -0.5;
+        difx *= Math.floor(Math.random() * 3) > 1 ? 1.25 : -.67; // 1 ? 1.25 : -0.5
         point12x += (Math.floor(Math.random() * difx));
 
         double point12y = (Math.floor((point2y + point1y) / 2));
         double dify = ((Math.max((Math.min((point2y - point12y), (point12y - point1y)) - 1), 0)) / 3);
-        dify *= Math.floor(Math.random() * 2) == 1 ? 1.25 : -0.5;
+        dify *= Math.floor(Math.random() * 3) < 1 ? .67 : -1.25;
         point12y += Math.floor(Math.random() * dify);
-
+        //------------------------------------------------------------------------------------------------
         if (point2x > point3x) {
             point23x = (Math.floor((point3x + point2x) / 2));
         } else if (point2x < point3x) {
             point23x = (Math.floor((((cellColumnCount - Math.abs(point3x - point2x)) / 2) + (cellColumnCount - (cellColumnCount - point3x))) % cellColumnCount));
         }
         double difx1 = ((Math.max((Math.min((point2x - point23x), (point23x - point3x)) - 1), 0)) / 3);
-        difx1 *= (Math.floor(Math.random() * 2) == 1 && difx < 0) ? 1.25 : -0.5;
+        difx1 *= (Math.floor(Math.random() * 3) > 1) ? 1.25 : -.67;
         point23x += (Math.floor(Math.random() * difx1));
         if ((int) point12x < 50 && (int) point23x > 75) {
             point23x = point12x;
@@ -176,34 +250,31 @@ public class Grid extends JPanel{
 
         double point23y = (Math.floor((point2y + point3y) / 2));
         double dify1 = ((Math.max((Math.min((point3y - point23y), (point23y - point2y)) - 1), 0)) / 3);
-        dify1 *= (Math.floor(Math.random() * 2) == 1 && dify < 0) ? 1.25 : -0.5;
+        dify1 *= (Math.floor(Math.random() * 3) > 1) ? 1.25 : -.67;
         point23y += Math.floor(Math.random() * dify1);
-
+        //------------------------------------------------------------------------------------------------
         if (point4x < point3x) {
             point34x = (Math.floor((point3x + point4x) / 2));
         } else if (point4x > point3x) {
             point34x = ((Math.floor((point3x + ((cellColumnCount - Math.abs(point3x - point4x)) / 2)) + (cellColumnCount - ((cellColumnCount - Math.abs(point3x - point4x)))))) % cellColumnCount);
         }
-
         double difx2 = ((Math.max((Math.min((point3x - point34x), (point34x - point4x)) - 1), 0)) / 3);
-        difx2 *= (Math.floor(Math.random() * 2) == 1 && difx < 0 && difx1 < 0) ? 1.25 : -0.5;
+        difx2 *= (Math.floor(Math.random() * 3) < 1) ? .67 : -1.25;
         point34x += Math.floor(Math.random() * difx2);
 
         double point34y = (Math.floor((point4y + point3y) / 2));
         double dify2 = ((Math.max((Math.min((point3y - point34y), (point34y - point4y)) - 1), 0)) / 3);
-        dify2 *= (Math.floor(Math.random() * 2) == 1 && dify < 0 && dify1 < 0) ? 1.25 : -0.5;
+        dify2 *= (Math.floor(Math.random() * 3) > 1) ? 1.25 : -.67;
         point34y += Math.floor(Math.random() * dify2);
-
+        //------------------------------------------------------------------------------------------------
         if (point4x < point1x) {
             point41x = (Math.floor((point1x + point4x) / 2));
         } else if (point4x > point1x) {
             point41x = ((Math.floor((point1x + ((cellColumnCount - Math.abs(point1x - point4x)) / 2)) + (cellColumnCount - ((cellColumnCount - Math.abs(point1x - point4x)))))) % cellColumnCount);
         }
-
         double difx3 = ((Math.max((Math.min((point1x - point41x), (point41x - point4x)) - 1), 0)) / 3);
-        difx3 *= (Math.floor(Math.random() * 2) == 1 && difx < 0 && difx1 < 0 && difx2 < 0) ? 1.25 : -0.5;
+        difx3 *= (Math.floor(Math.random() * 3) < 1) ? .67 : -1.25;
         point41x += Math.floor(Math.random() * difx3);
-        //System.out.println("Point34x: " + point34x + " Point41x: " + point41x);
         if ((int) point34x < 50 && (int) point41x > 75) {
             point41x = point34x;
         } else if ((int) point34x > 75 && (int) point41x < 50) {
@@ -212,8 +283,9 @@ public class Grid extends JPanel{
 
         double point41y = (Math.floor((point4y + point1y) / 2));
         double dify3 = ((Math.max((Math.min((point4y - point41y), (point41y - point1y)) - 1), 0)) / 3);
-        dify3 *= (Math.floor(Math.random() * 2) == 1 && dify < 0 && dify1 < 0 && dify2 < 0) ? 1.25 : -0.5;
+        dify3 *= (Math.floor(Math.random() * 3) < 1) ? .67 : -1.25;
         point41y += Math.floor(Math.random() * dify3);
+
 
         //SLOPES(M) AND INTERSECTIONS(B)
         //Upper Half
@@ -404,15 +476,27 @@ public class Grid extends JPanel{
 
             }
         }
+
     }
 
     public void islandPlacer() {
         //until you go back and figure out what exactly poleDistance does, just keep it same size as "size"
         //trimEdge - always 2 when size is 10+. 1 when below. Actually caps at size 3 when you get to 30+.
-        //what the hell does variation do?
-       // islandMaker(20, 5, 2, 20); //1 size 20
-        //islandMaker(20, 20, 2, 20); //1 size 20
-        islandMaker(30, 8, 3, 30); //1 size 20
+        islandMaker(60,  3); //1 size 20
+        islandMaker(60,  3); //1 size 20
+        islandMaker(60,  3); //1 size 20
+        islandMaker(30,  3); //1 size 20
+        islandMaker(30,  3); //1 size 20
+        islandMaker(30,  3); //1 size 20
+        islandMaker(30,  3); //1 size 20
+        islandMaker(20,  2); //1 size 20
+        islandMaker(20,  2); //1 size 20
+        islandMaker(10,  2); //1 size 20
+        islandMaker(10,  2); //1 size 20
+        islandMaker(20,  2); //1 size 20
+        islandMaker(10,  2); //1 size 20
+        islandMaker(10,  2); //1 size 20
+
         //islandMaker(40, 8, 4, 40); //1 size 20
         //islandMaker(10, 5, 1, 10); //1 size 20
         /*islandMaker(15, 5, 2, 15);  //1
@@ -438,7 +522,7 @@ public class Grid extends JPanel{
         repaint();
     }
 
-    public void lakeMaker(double variation, double trimEdge) {
+    public void lakeMaker(double trimEdge) {
         //for (int lake = 0; lake < 100; lake++) {
         boolean lakePlaced = false;
         while(lakePlaced == false) {
@@ -516,7 +600,7 @@ public class Grid extends JPanel{
                 double point1x = centerX + ((Math.floor(Math.random() * (2))) * (Math.floor(Math.random() * 2) == 1 ? 1 : -1));  //moves point to one side or another slightly for variation
                 if (point1x < 0) {
                     point1x = 0;
-                }  //this and below makes sure that X point doesn't go off one end of the map and fuck up future code
+                }  //this and below makes sure that X point doesn't go off one end of the map and mess up future code
                 else if (point1x >= cellColumnCount) {
                     point1x = (cellColumnCount - 1);
                 }
@@ -537,27 +621,12 @@ public class Grid extends JPanel{
                     point2x = (((point2x - centerX) + (cellColumnCount - (cellColumnCount - centerX)))) % cellColumnCount;
                 }  //if point2x goes off the map one way or another, this will loop it around to the other side
                 double point2y = (centerY + ((Math.floor(Math.random() * 10)) * (Math.floor(Math.random() * 2) == 1 ? 1 : -1)));
-                if (point2y < (point1y + variation)) {
-                    point2y = (point1y + variation);
-                }     //this is to make sure the island doesn't look quite so squished if the center points lands near the poles
-                else if (point2y > (point3y - variation)) {
-                    point2y = (point3y - variation);
-                }
 
                 double point4x = (centerX - (Math.floor(Math.random() * 1) + 4));
                 if (point4x < 0) {
                     point4x = ((centerX + (centerX - point4x)) + (cellColumnCount - ((centerX - point4x) * 2)));
                 }
                 double point4y = (centerY + ((Math.floor(Math.random() * 10)) * (Math.floor(Math.random() * 2) == 1 ? 1 : -1)));
-                if (point4y < (point1y + variation)) {
-                    point4y = (point1y + variation);
-                } else if (point4y > (point3y - variation)) {
-                    point4y = (point3y - variation);
-                }
-
-                //console.log("CenterX: " + centerX + " CenterY: " + centerY);
-                //console.log("clonex " + cloneCenterX + " cloney " + cloneCenterY);
-                //console.log("point1x " + point1x + " point3x " + point3x + " point2y " + point2y + " point4y " + point4y);
 
                 //FINDING MIDPOINTS BETWEEN POINTS 1, 2, 3, 4
                 if (point2x > point1x) {
@@ -852,7 +921,7 @@ public class Grid extends JPanel{
     public void lakePlacer(){
         int lakeCount = 0;
         while (lakeCount < 3) {
-            lakeMaker(1, 1);
+            lakeMaker(1);
             lakeCount++;
         }
         repaint();
@@ -886,12 +955,12 @@ public class Grid extends JPanel{
                 if (freshBlueNum > 2) {
                     grid[c][r].nextColor = freshBlue;
                 }
-                /*else if (freshBlueNum > 0 && freshBlueNum < 3) {
+                else if (freshBlueNum > 0 && freshBlueNum < 3) {
                     double chance = Math.random();
                     if (chance < 0.95) {
                         grid[c][r].nextColor = freshBlue;
                     }
-                }*/
+                }
             }
         }
         for(int c=0;c<cellColumnCount;c++) {
@@ -2292,7 +2361,7 @@ public class Grid extends JPanel{
                     waterSource = (waterSource + ((1 - waterSource) * .10));
                 }
 
-                //EQUATOR/POLES SHIT
+                //EQUATOR/POLES
                 double precipMax = (waterSource + ((1-waterSource) * .05));
                 double precipMin = (waterSource * .15);
                 double precipRange = precipMax - precipMin;

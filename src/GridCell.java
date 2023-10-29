@@ -14,7 +14,6 @@ public class GridCell {
     public double nextMaxTemp;
     public double nextMinTemp;
     public double nextAvgTemp;
-    public Color oceanBlue = new Color(16, 0, 204);
     public boolean isCoast;
     public double water;
     public double nextWater;
@@ -24,7 +23,7 @@ public class GridCell {
     public GridCell() {
         this.x = 0;
         this.y = 0;
-        this.color = oceanBlue;
+        this.color = Grid.oceanBlue;
         this.nextColor = Color.black;
         this.trueColor = Color.black;
         this.neighborCount = 0;
@@ -67,12 +66,6 @@ public class GridCell {
     public int getNeighborCount(){
         return neighborCount;
     }
-
-   /* public void printNeighbors() {
-        for (int n = 0; n < neighborCount; n++) {
-            System.out.println("Coordinates for neighbor " + n + ": " + neighbors[n].x + ", " + neighbors[n].y);
-        }
-    }*/
 
     public void changeCellColor(Color newColor) {
         this.color = newColor;
