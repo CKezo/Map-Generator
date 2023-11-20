@@ -39,6 +39,12 @@ public class KeyListenerClass extends Grid implements KeyListener{
         if(e.getKeyChar() == '3') {
             Main.gameGrid.noSquareInlets();
         }
+        if(e.getKeyChar() == '4') {
+            Main.gameGrid.storeBackup();
+        }
+        if(e.getKeyChar() == '5') {
+            Main.gameGrid.switchBetweenTransformations();
+        }
         if(e.getKeyChar() == 'd') {
             if (windComesFrom.equals("west")) {
                 Main.gameGrid.drawEarthMap();
