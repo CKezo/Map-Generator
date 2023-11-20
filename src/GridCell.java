@@ -6,7 +6,8 @@ public class GridCell {
     public Color color;
     public Color nextColor;
     public Color trueColor;
-    public Color backUpColor;
+    public Color backUpColor; //for debugging
+    public Color backUpColor1; //for debugging
     private final GridCell[] neighbors;
     private int neighborCount;
     public double maxTemp;
@@ -28,6 +29,7 @@ public class GridCell {
         this.nextColor = Color.black;
         this.trueColor = Color.black;
         this.backUpColor = Color.black;
+        this.backUpColor1 = Color.black;
         this.neighborCount = 0;
         this.isCoast = false;
         this.isLake = false;

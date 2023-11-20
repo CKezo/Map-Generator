@@ -43,6 +43,9 @@ public class KeyListenerClass extends Grid implements KeyListener{
             Main.gameGrid.storeBackup();
         }
         if(e.getKeyChar() == '5') {
+            Main.gameGrid.restoreBackup();
+        }
+        if(e.getKeyChar() == '6') {
             Main.gameGrid.switchBetweenTransformations();
         }
         if(e.getKeyChar() == 'd') {

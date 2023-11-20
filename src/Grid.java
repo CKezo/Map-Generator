@@ -13,6 +13,7 @@ public class Grid extends JPanel{
     public static int topInset = 0;
     public static final int topBlackspace = 20;
     public static final int leftBlackspace = 20;
+    private boolean mapSwitch = true;
 
     public GridCell[][] grid = new GridCell[cellColumnCount][cellRowCount];
 
@@ -2998,9 +2999,30 @@ public class Grid extends JPanel{
         }
     }
     public void switchBetweenTransformations(){ //for debugging
+        if(mapSwitch) {
+            for (int c = 0; c < cellColumnCount; c++) {
+                for (int r = 0; r < cellRowCount; r++) {
+                    grid[c][r].backUpColor1 = grid[c][r].color;
+                    grid[c][r].color = grid[c][r].backUpColor;
+                }
+            }
+            mapSwitch = false;
+        } else {
+            for (int c = 0; c < cellColumnCount; c++) {
+                for (int r = 0; r < cellRowCount; r++) {
+                    grid[c][r].color = grid[c][r].backUpColor1;
+                }
+            }
+            mapSwitch = true;
+        }
+        repaint();
+    }
+
+    public void restoreBackup(){ //for debugging
         for (int c = 0; c < cellColumnCount; c++) {
             for (int r = 0; r < cellRowCount; r++) {
                 grid[c][r].color = grid[c][r].backUpColor;
+                grid[c][r].nextColor = grid[c][r].backUpColor;
             }
         }
         repaint();

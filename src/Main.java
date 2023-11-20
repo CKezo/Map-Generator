@@ -58,7 +58,7 @@ public class Main extends JFrame{
 /*
 -islandPlacer - currently have some commented out code that I'd like to get back in once we figure out an optimal blend of what size islands make
     for the most realistic looking land masses
--fix rivers cutting through mountains
+-fix rivers and lakes cutting through mountains
 -Investigate why mountains receive more precipitation even when surrounded by desert on both sides
 -temperature and island size needs to scale to size of map
 -Grid class, privatize the variables again and make getters for them
