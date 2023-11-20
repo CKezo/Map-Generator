@@ -28,6 +28,7 @@ public class KeyListenerClass extends Grid implements KeyListener{
         }
         if(e.getKeyChar() == '9') {
             Main.newMap();
+            windComesFrom = "west";
         }
         if(e.getKeyChar() == 'd') {
             if (windComesFrom.equals("west")) {

@@ -480,7 +480,6 @@ public class Grid extends JPanel{
     }
 
     public void islandPlacer() {
-        //until you go back and figure out what exactly poleDistance does, just keep it same size as "size"
         //trimEdge - always 2 when size is 10+. 1 when below. Actually caps at size 3 when you get to 30+.
         islandMaker(60,  3); //1 size 20
         islandMaker(60,  3); //1 size 20
@@ -2112,6 +2111,8 @@ public class Grid extends JPanel{
                 boolean riverFound = false, lakeFound = false;
                 int cloneC = c;
                 int cloneR = r;
+                //THIS SECTION BELOW NEEDS ADDITIONAL LOGIC TO ENSURE WHILE LOOPS END
+                //System.out.println("1");
                 while (Ncheck == false) {
                     if (grid[c][r].color == landGreen || grid[c][r].color == freshBlue || grid[c][r].color == mountainWhite) {
                         Ndist++;
@@ -2128,19 +2129,34 @@ public class Grid extends JPanel{
                 riverFound = false; lakeFound = false;
                 c = cloneC;
                 r = cloneR;
+                int startC = c;
+                boolean fullLoopAround = false;
                 while (Wcheck == false) {
-                    if (grid[c][r].color == landGreen || grid[c][r].color == freshBlue || grid[c][r].color == mountainWhite) {
-                        Wdist++;
-                        c--;
-                        if (c < 0) {c = (cellColumnCount-1);}
-                        if (grid[c][r].color == mountainWhite) {Wmtn = 0.1;}
-                        else if (grid[c][r].isRiver = true && riverFound == false) {WdistRiver = Wdist; riverFound = true;}
-                        else if (grid[c][r].isLake = true && lakeFound == false) {WdistLake = Wdist; lakeFound = true;}
+                    if((c == startC && fullLoopAround)) {
+                        break;
+                    } else {
+                        if (grid[c][r].color == landGreen || grid[c][r].color == freshBlue || grid[c][r].color == mountainWhite) {
+                            Wdist++;
+                            c--;
+                            if (c < 0) {
+                                c = (cellColumnCount - 1);
+                            }
+                            if (grid[c][r].color == mountainWhite) {
+                                Wmtn = 0.1;
+                            } else if (grid[c][r].isRiver = true && riverFound == false) {
+                                WdistRiver = Wdist;
+                                riverFound = true;
+                            } else if (grid[c][r].isLake = true && lakeFound == false) {
+                                WdistLake = Wdist;
+                                lakeFound = true;
+                            }
+                        } else if (grid[c][r].color.equals(oceanBlue)) {
+                            Wcheck = true;
+                        }
                     }
-                    else if (grid[c][r].color.equals(oceanBlue)) {
-                        Wcheck = true;
-                    }
+                    fullLoopAround = true;
                 }
+                //System.out.println("2");
                 riverFound = false; lakeFound = false;
                 c = cloneC;
                 r = cloneR;
@@ -2160,18 +2176,32 @@ public class Grid extends JPanel{
                 riverFound = false; lakeFound = false;
                 c = cloneC;
                 r = cloneR;
+                startC = c;
+                fullLoopAround = false;
                 while (Echeck == false) {
-                    if (grid[c][r].color == landGreen || grid[c][r].color == freshBlue || grid[c][r].color == mountainWhite) {
-                        Edist++;
-                        c++;
-                        if (c >= cellColumnCount) {c = 0;}
-                        if (grid[c][r].color == mountainWhite) {Emtn = 0.1;}
-                        else if (grid[c][r].isRiver = true && riverFound == false) {EdistRiver = Edist; riverFound = true;}
-                        else if (grid[c][r].isLake = true && lakeFound == false) {EdistLake = Edist; lakeFound = true;}
+                    if((c == startC && fullLoopAround)) {
+                        break;
+                    } else {
+                        if (grid[c][r].color == landGreen || grid[c][r].color == freshBlue || grid[c][r].color == mountainWhite) {
+                            Edist++;
+                            c++;
+                            if (c >= cellColumnCount) {
+                                c = 0;
+                            }
+                            if (grid[c][r].color == mountainWhite) {
+                                Emtn = 0.1;
+                            } else if (grid[c][r].isRiver = true && riverFound == false) {
+                                EdistRiver = Edist;
+                                riverFound = true;
+                            } else if (grid[c][r].isLake = true && lakeFound == false) {
+                                EdistLake = Edist;
+                                lakeFound = true;
+                            }
+                        } else if (grid[c][r].color.equals(oceanBlue) || (c == startC && fullLoopAround)) {
+                            Echeck = true;
+                        }
                     }
-                    else if (grid[c][r].color.equals(oceanBlue)) {
-                        Echeck = true;
-                    }
+                    fullLoopAround = true;
                 }
                 riverFound = false; lakeFound = false;
                 c = cloneC;
@@ -2260,9 +2290,7 @@ public class Grid extends JPanel{
                 else if (SWdistRiver > 2.7 && SWdistRiver < 2.9|| SWdistLake > 2.7 && SWdistLake < 2.9) {grid[c][r].water = 0.9;}
                 else if (SdistRiver > 1.9 && SdistRiver < 2.1 || SdistLake > 1.9 && SdistLake < 2.1) {grid[c][r].water = 0.9;}
                 //console.log(grid[c][r].water);
-
                 double Nwater = 0, NEwater = 0, Ewater = 0, SEwater = 0, Swater = 0, SWwater = 0, Wwater = 0, NWwater = 0;
-
                 double distModifier = .75;
                 double windBonus = .935;
                 double oppositePenalty = .1;
@@ -2350,9 +2378,7 @@ public class Grid extends JPanel{
                     Wwater = Math.pow(distModifier, Wdist) * semiOppositePenalty * Wmtn;
                     NWwater = Math.pow(distModifier, NWdist) * oppositePenalty * NWmtn;
                 }
-
                 double waterSource = Math.max(Nwater, Math.max(NEwater, Math.max(Ewater, Math.max(SEwater, Math.max(Swater, Math.max(SWwater, Math.max(Wwater, NWwater)))))));
-
                 //FINAL RIVER & LAKE MODIFIERS
                 if (NdistLake > 2.9 && NdistLake < 3.1 || NEdistLake > 4.1 && NEdistLake < 4.3 || EdistLake > 2.9 && EdistLake < 3.1 || SEdistLake > 4.1 && SEdistLake < 4.3 || SdistLake > 2.9 && SdistLake < 3.1 || SWdistLake > 4.1 && SWdistLake < 4.3 || WdistLake > 2.9 && WdistLake < 3.1 || NWdistLake > 4.1 && NWdistLake < 4.3) {
                     waterSource = (waterSource + ((1 - waterSource) * .20));
@@ -2360,7 +2386,6 @@ public class Grid extends JPanel{
                 else if (NdistLake > 3.9 && NdistLake < 4.1 || NEdistLake > 5.5 && NEdistLake < 5.7 || EdistLake > 3.9 && EdistLake < 4.1 || SEdistLake > 5.5 && SEdistLake < 5.7 || SdistLake > 3.9 && SdistLake < 4.1 || SWdistLake > 5.5 && SWdistLake < 5.7 || WdistLake > 3.9 && WdistLake < 4.1|| NWdistLake > 5.5 && NWdistLake < 5.7) {
                     waterSource = (waterSource + ((1 - waterSource) * .10));
                 }
-
                 //EQUATOR/POLES
                 double precipMax = (waterSource + ((1-waterSource) * .05));
                 double precipMin = (waterSource * .15);
@@ -2370,7 +2395,6 @@ public class Grid extends JPanel{
                 if (r >= equatorR) {distanceToEQ = r - equatorR;}
                 else if (r <= equatorR) {distanceToEQ = equatorR - r;}
                 grid[c][r].water = (precipMax - (precipRange * (distanceToEQ/maxDist)));
-
                 if (grid[c][r].color == freshBlue || grid[c][r].color.equals(oceanBlue)) {grid[c][r].water = 1;}
             }
         }
@@ -2446,15 +2470,23 @@ public class Grid extends JPanel{
                 }
                 c = cloneC;
                 r = cloneR;
+                int startC = c;
+                boolean fullLoopAround = false;
                 while (Wcheck == false) {
-                    if (grid[c][r].color == landGreen || grid[c][r].color == freshBlue || grid[c][r].color == mountainWhite) {
-                        Wdist++;
-                        c--;
-                        if (c < 0) {c = (cellColumnCount-1);}
+                    if(c == startC && fullLoopAround){
+                        break;
+                    } else {
+                        if (grid[c][r].color == landGreen || grid[c][r].color == freshBlue || grid[c][r].color == mountainWhite) {
+                            Wdist++;
+                            c--;
+                            if (c < 0) {
+                                c = (cellColumnCount - 1);
+                            }
+                        } else if (grid[c][r].color.equals(oceanBlue)) {
+                            Wcheck = true;
+                        }
                     }
-                    else if (grid[c][r].color.equals(oceanBlue)) {
-                        Wcheck = true;
-                    }
+                    fullLoopAround = true;
                 }
                 c = cloneC;
                 r = cloneR;
@@ -2470,15 +2502,23 @@ public class Grid extends JPanel{
                 }
                 c = cloneC;
                 r = cloneR;
+                startC = c;
+                fullLoopAround = false;
                 while (Echeck == false) {
-                    if (grid[c][r].color == landGreen || grid[c][r].color == freshBlue || grid[c][r].color == mountainWhite) {
-                        Edist++;
-                        c++;
-                        if (c >= cellColumnCount) {c = 0;}
+                    if(c == startC && fullLoopAround){
+                        break;
+                    } else {
+                        if (grid[c][r].color == landGreen || grid[c][r].color == freshBlue || grid[c][r].color == mountainWhite) {
+                            Edist++;
+                            c++;
+                            if (c >= cellColumnCount) {
+                                c = 0;
+                            }
+                        } else if (grid[c][r].color.equals(oceanBlue)) {
+                            Echeck = true;
+                        }
                     }
-                    else if (grid[c][r].color.equals(oceanBlue)) {
-                        Echeck = true;
-                    }
+                    fullLoopAround = true;
                 }
                 c = cloneC;
                 r = cloneR;
