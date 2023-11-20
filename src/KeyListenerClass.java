@@ -30,6 +30,15 @@ public class KeyListenerClass extends Grid implements KeyListener{
             Main.newMap();
             windComesFrom = "west";
         }
+        if(e.getKeyChar() == '1') {
+            Main.gameGrid.removeSharpInlets();
+        }
+        if(e.getKeyChar() == '2') {
+            Main.gameGrid.addNoise();
+        }
+        if(e.getKeyChar() == '3') {
+            Main.gameGrid.noSquareInlets();
+        }
         if(e.getKeyChar() == 'd') {
             if (windComesFrom.equals("west")) {
                 Main.gameGrid.drawEarthMap();

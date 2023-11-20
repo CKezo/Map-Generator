@@ -1,6 +1,7 @@
 import javax.swing.*;
 import java.awt.*;
 import java.lang.Math;
+import java.util.ArrayList;
 
 
 public class Grid extends JPanel{
@@ -57,7 +58,7 @@ public class Grid extends JPanel{
         defineNeighbors();
     }
 
-    public void defineNeighbors() {
+    public void defineNeighbors() { //removeSharpInlets depends on the order of neighbor adding in here to be consistent! Do not change order.
         for (int c = 0; c < cellColumnCount; c++) {
             for (int r = 0; r < cellRowCount; r++) {
                 switch (c) {
@@ -66,12 +67,12 @@ public class Grid extends JPanel{
                         grid[c][r].addNeighbor(grid[cellColumnCount - 1][r]);
                         break;
                     case (cellColumnCount - 1):
-                        grid[c][r].addNeighbor(grid[c - 1][r]);
                         grid[c][r].addNeighbor(grid[0][r]);
+                        grid[c][r].addNeighbor(grid[c - 1][r]);
                         break;
                     default:
-                        grid[c][r].addNeighbor(grid[c - 1][r]);
                         grid[c][r].addNeighbor(grid[c + 1][r]);
+                        grid[c][r].addNeighbor(grid[c - 1][r]);
                 }
                 switch (r) {
                     case 0:
@@ -496,11 +497,6 @@ public class Grid extends JPanel{
         islandMaker(10,  2); //1 size 20
         islandMaker(10,  2); //1 size 20
 
-        //islandMaker(40, 8, 4, 40); //1 size 20
-        //islandMaker(10, 5, 1, 10); //1 size 20
-        /*islandMaker(15, 5, 2, 15);  //1
-        islandMaker(8, 4, 1, 8); //4*/
-
         double landPercent = 0;
         /*while (landPercent < 0.4) {
             int land = 0;
@@ -518,6 +514,88 @@ public class Grid extends JPanel{
                 islandMaker(startingSize, 2, 1, 6);
             }
         }*/
+        repaint();
+    }
+
+    public void removeSharpInlets(){ //searches numSpacesToSearch in cardinal directions of each cell. If it finds another land cell across a short span of ocean, it fills the ocean in with land.
+        int numSpacesToSearch = 4;
+        for (int c = 0; c < cellColumnCount; c++) {
+            for (int r = 0; r < cellRowCount; r++){
+                if(r < numSpacesToSearch + 1){ //This logic and the else if below are so we don't have to worry about programming for all the edge cases at the poles of the map where very little land spawns anyways.
+                    continue;
+                } else if (r >= cellRowCount - numSpacesToSearch - 1) {
+                    continue;
+                }
+                if(grid[c][r].color == landGreen){
+                    //Neighbors are always listed in this order for direction variable below [east 0, west 1, north 2, south 3] for squares not on top/bottom edge which are omitted in this fucntion
+                    for (int direction = 0; direction < grid[c][r].getNeighborCount(); direction++){
+                        boolean foundCloseLand = false;
+                        GridCell targetCell = grid[c][r].getNeighbors()[direction];
+                        int spacesSearched = 0;
+                        ArrayList<GridCell> cellsToPotentiallyChange = new ArrayList<>();
+                        for (; spacesSearched < numSpacesToSearch; spacesSearched++){
+                            if (targetCell.color == oceanBlue){
+                                cellsToPotentiallyChange.add(targetCell);
+                                targetCell = targetCell.getNeighbors()[direction];
+                            } else if (targetCell.color == landGreen) {
+                                for (int i = 0; i < cellsToPotentiallyChange.size(); i++){
+                                    cellsToPotentiallyChange.get(i).color = landGreen;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        repaint();
+    }
+
+    public void noSquareInlets(){ //looks for corners former from unnatural looking 3 cells converging from two directions in a straight line and adds a land cell to "round" out the corner.
+        int numSpacesToSearch = 3;
+        for (int c = 0; c < cellColumnCount; c++) {
+            for (int r = 0; r < cellRowCount; r++) {
+                if(r < numSpacesToSearch + 1){ //This logic and the else if below are so we don't have to worry about programming for all the edge cases at the poles of the map where very little land spawns anyways.
+                    continue;
+                } else if (r >= cellRowCount - numSpacesToSearch - 1) {
+                    continue;
+                }
+                if(grid[c][r].color == landGreen){
+                    //Neighbors are always listed in this order for direction variables below [east 0, west 1, north 2, south 3] for squares not on top/bottom edge which are omitted in this fucntion
+                    int direction1 = -1;
+                    int direction2 = -1;
+                    if(grid[c][r].getNeighbors()[2].getNeighbors()[0].color == oceanBlue){ //check northeast neighbor
+                        direction1 = 2;
+                        direction2 = 0;
+                    } else if (grid[c][r].getNeighbors()[3].getNeighbors()[0].color == oceanBlue) { //check southeast neighbor
+                        direction1 = 3;
+                        direction2 = 0;
+                    } else if (grid[c][r].getNeighbors()[3].getNeighbors()[1].color == oceanBlue) { //check southwest neighbor
+                        direction1 = 3;
+                        direction2 = 1;
+                    } else if (grid[c][r].getNeighbors()[2].getNeighbors()[1].color == oceanBlue) { //check northwest neighbor
+                        direction1 = 2;
+                        direction2 = 1;
+                    }
+                    if(direction1 != -1){
+                        GridCell targetCell1 = grid[c][r].getNeighbors()[direction1];
+                        GridCell targetCell2 = grid[c][r].getNeighbors()[direction2];
+                        for (int n = 1; n <= numSpacesToSearch; n++){
+                            if(targetCell1.color != landGreen || targetCell2.color!= landGreen){
+                                break;
+                            }
+                            if (targetCell1.getNeighbors()[direction2].color != oceanBlue || targetCell2.getNeighbors()[direction1].color != oceanBlue){
+                                break;
+                            } else if (n == numSpacesToSearch) {
+                                grid[c][r].getNeighbors()[direction1].getNeighbors()[direction2].color = landGreen;
+                            } else {
+                                targetCell1 = targetCell1.getNeighbors()[direction1];
+                                targetCell2 = targetCell2.getNeighbors()[direction2];
+                            }
+                        }
+                    }
+                }
+            }
+        }
         repaint();
     }
 
@@ -947,7 +1025,7 @@ public class Grid extends JPanel{
                 }
                 else if (greenNum > 0 && greenNum < 4 && !grid[c][r].color.equals(freshBlue)) {
                     double chance = Math.random();
-                    if (chance < 0.85) {
+                    if (chance < 0.85) { //was rollin with 85 which looked good before new method, 66 looks good but a lil chunky
                         grid[c][r].nextColor = landGreen;
                     }
                 }
@@ -956,7 +1034,7 @@ public class Grid extends JPanel{
                 }
                 else if (freshBlueNum > 0 && freshBlueNum < 3) {
                     double chance = Math.random();
-                    if (chance < 0.95) {
+                    if (chance < 0.90) {
                         grid[c][r].nextColor = freshBlue;
                     }
                 }
