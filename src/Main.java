@@ -2,8 +2,8 @@ import javax.swing.*;
 import java.awt.*;
 
 public class Main extends JFrame{
-    private static final int WIDTH = 1060;
-    private static final int HEIGHT = 675;
+    private final int WIDTH = 1060;
+    private final int HEIGHT = 675;
 
     public Main() {
         setPreferredSize(new Dimension(WIDTH, HEIGHT));
@@ -22,8 +22,12 @@ public class Main extends JFrame{
         add(theMouseListener);
     }
 
-    public static Grid gameGrid;
-    public static Main frame = new Main();
+    private static Grid gameGrid;
+    private static Main frame = new Main();
+
+    public static Grid getGameGrid(){
+        return gameGrid;
+    }
     public static void newMap() {
         gameGrid = new Grid();
         gameGrid.islandPlacer();
@@ -43,8 +47,8 @@ public class Main extends JFrame{
         frame.add(gameGrid);
         frame.setVisible(true);
         Insets insets = frame.getInsets();
-        Grid.leftInset = insets.left;
-        Grid.topInset = insets.top;
+        Grid.setLeftInset(insets.left);
+        Grid.setTopInset(insets.top);
 
         //System.out.println(frame.getInsets());      //Let's you know how much the frame offsets the panel
     }

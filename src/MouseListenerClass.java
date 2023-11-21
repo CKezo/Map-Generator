@@ -3,12 +3,12 @@ import java.awt.event.MouseListener;
 
 public class MouseListenerClass extends Grid implements MouseListener {
     public void mouseClicked(MouseEvent e) {
-        double mouseX = Math.floor((e.getX() - (double)leftInset - topBlackspace)/cellWidth);     //3 and 26 are how many pixels the panel is offset from the sides of the window
-        double mouseY = Math.floor((e.getY() - (double)topInset - topBlackspace)/cellHeight);
+        double mouseX = Math.floor((e.getX() - (double)getLeftInset() - getTopBlackspace())/getCellWidth());     //3 and 26 are how many pixels the panel is offset from the sides of the window
+        double mouseY = Math.floor((e.getY() - (double)getTopInset() - getTopBlackspace())/getCellHeight());
         if(mouseX >= 0 && mouseX < getCellColumnCount() && mouseY >= 0 && mouseY < getCellRowCount()){
             System.out.println((int)mouseX + " " + (int)mouseY);
-            GridCell cell = Main.gameGrid.getCellAtXY((int)mouseX, (int)mouseY);
-            System.out.println(cell.biome);
+            GridCell cell = Main.getGameGrid().getCellAtXY((int)mouseX, (int)mouseY);
+            System.out.println(cell.getBiome());
         }
         System.out.println("____________");
     }

@@ -5,96 +5,97 @@ import java.awt.event.KeyListener;
 public class KeyListenerClass extends Grid implements KeyListener{
     private String windComesFrom = "west";
     public void keyTyped(KeyEvent e) {
+        Grid grid = Main.getGameGrid();
         if(e.getKeyChar() == 'b') {
-            Main.gameGrid.drawBiomes();
+            grid.drawBiomes();
         }
         if(e.getKeyChar() == 'e') {
-            Main.gameGrid.drawEarthMap();
+            grid.drawEarthMap();
         }
         if(e.getKeyChar() == 'w') {
-            Main.gameGrid.drawPrecipMap();
+            grid.drawPrecipMap();
         }
         if(e.getKeyChar() == 'l') {
-            Main.gameGrid.drawMinTemp();
+            grid.drawMinTemp();
         }
         if(e.getKeyChar() == 'h') {
-            Main.gameGrid.drawMaxTempMap();
+            grid.drawMaxTempMap();
         }
         if(e.getKeyChar() == 'r') {
-            Main.gameGrid.drawMaxRangeMap();
+            grid.drawMaxRangeMap();
         }
         if(e.getKeyChar() == 'a') {
-            Main.gameGrid.drawAvgTempMap();
+            grid.drawAvgTempMap();
         }
         if(e.getKeyChar() == '9') {
             Main.newMap();
             windComesFrom = "west";
         }
         if(e.getKeyChar() == '1') {
-            Main.gameGrid.removeSharpInlets();
+            grid.removeSharpInlets();
         }
         if(e.getKeyChar() == '2') {
-            Main.gameGrid.addNoise();
+            grid.addNoise();
         }
         if(e.getKeyChar() == '3') {
-            Main.gameGrid.noSquareInlets();
+            grid.noSquareInlets();
         }
         if(e.getKeyChar() == '4') {
-            Main.gameGrid.storeBackup();
+            grid.storeBackup();
         }
         if(e.getKeyChar() == '5') {
-            Main.gameGrid.restoreBackup();
+            grid.restoreBackup();
         }
         if(e.getKeyChar() == '6') {
-            Main.gameGrid.switchBetweenTransformations();
+            grid.switchBetweenTransformations();
         }
         if(e.getKeyChar() == 'd') {
             if (windComesFrom.equals("west")) {
-                Main.gameGrid.drawEarthMap();
-                Main.gameGrid.defineWaterAvail("northwest");
-                Main.gameGrid.drawPrecipMap();
+                grid.drawEarthMap();
+                grid.defineWaterAvail("northwest");
+                grid.drawPrecipMap();
                 windComesFrom = "northwest";
             }
             else if (windComesFrom.equals("northwest")) {
-                Main.gameGrid.drawEarthMap();
-                Main.gameGrid.defineWaterAvail("north");
-                Main.gameGrid.drawPrecipMap();
+                grid.drawEarthMap();
+                grid.defineWaterAvail("north");
+                grid.drawPrecipMap();
                 windComesFrom = "north";
             }
             else if (windComesFrom.equals("north")) {
-                Main.gameGrid.drawEarthMap();
-                Main.gameGrid.defineWaterAvail("northeast");
-                Main.gameGrid.drawPrecipMap();
+                grid.drawEarthMap();
+                grid.defineWaterAvail("northeast");
+                grid.drawPrecipMap();
                 windComesFrom = "northeast";
             }
             else if (windComesFrom.equals("northeast")) {
-                Main.gameGrid.drawEarthMap();
-                Main.gameGrid.defineWaterAvail("east");
-                Main.gameGrid.drawPrecipMap();
+                grid.drawEarthMap();
+                grid.defineWaterAvail("east");
+                grid.drawPrecipMap();
                 windComesFrom = "east";
             }
             else if (windComesFrom.equals("east")) {
-                Main.gameGrid.drawEarthMap();
-                Main.gameGrid.defineWaterAvail("southeast");
-                Main.gameGrid.drawPrecipMap();
+                grid.drawEarthMap();
+                grid.defineWaterAvail("southeast");
+                grid.drawPrecipMap();
                 windComesFrom = "southeast";
             }
             else if (windComesFrom.equals("southeast")) {
-                Main.gameGrid.drawEarthMap();
-                Main.gameGrid.defineWaterAvail("south");
-                Main.gameGrid.drawPrecipMap();
+                grid.drawEarthMap();
+                grid.defineWaterAvail("south");
+                grid.drawPrecipMap();
                 windComesFrom = "south";
             }
             else if (windComesFrom.equals("south")) {
-                Main.gameGrid.drawEarthMap();
-                Main.gameGrid.defineWaterAvail("southwest");
-                Main.gameGrid.drawPrecipMap();
+                grid.drawEarthMap();
+                grid.defineWaterAvail("southwest");
+                grid.drawPrecipMap();
                 windComesFrom = "southwest";
             }
             else if (windComesFrom.equals("southwest")) {
-                Main.gameGrid.drawEarthMap();
-                Main.gameGrid.defineWaterAvail("west");
-                Main.gameGrid.drawPrecipMap();
+                grid.drawEarthMap();
+                grid.defineWaterAvail("west");
+                grid.drawPrecipMap();
                 windComesFrom = "west";
             }
         }
