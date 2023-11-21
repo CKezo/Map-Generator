@@ -30,7 +30,7 @@ public class Main extends JFrame{
         gameGrid.removeSharpInlets();
         gameGrid.addNoise();
         gameGrid.addNoise();
-        //then remove corners and long straights
+        //then remove long straights
         gameGrid.lakePlacer();
         gameGrid.addNoise();
         gameGrid.removeSharpInlets();
@@ -58,6 +58,7 @@ public class Main extends JFrame{
 /*
 -islandPlacer - currently have some commented out code that I'd like to get back in once we figure out an optimal blend of what size islands make
     for the most realistic looking land masses
+-add world biome total percentage of land
 -fix rivers and lakes cutting through mountains
 -Investigate why mountains receive more precipitation even when surrounded by desert on both sides
 -temperature and island size needs to scale to size of map

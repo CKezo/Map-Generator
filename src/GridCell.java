@@ -21,6 +21,8 @@ public class GridCell {
     public double nextWater;
     public boolean isLake;
     public boolean isRiver;
+    public String biome;
+    public Color biomeColor;
 
     public GridCell() {
         this.x = 0;
@@ -30,6 +32,8 @@ public class GridCell {
         this.trueColor = Color.black;
         this.backUpColor = Color.black;
         this.backUpColor1 = Color.black;
+        this.biomeColor = Color.black;
+        this.biome = "Ocean";
         this.neighborCount = 0;
         this.isCoast = false;
         this.isLake = false;
