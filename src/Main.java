@@ -34,11 +34,11 @@ public class Main extends JFrame{
         gameGrid.removeSharpInlets();
         gameGrid.addNoise();
         gameGrid.addNoise();
-        //then remove long straights
         gameGrid.lakePlacer();
         gameGrid.addNoise();
         gameGrid.removeSharpInlets();
         gameGrid.noSquareInlets();
+        gameGrid.fixLongStraightCoasts();
         gameGrid.defineCoasts();
         gameGrid.mountainPlacer();
         gameGrid.riverPlacer();
@@ -60,10 +60,10 @@ public class Main extends JFrame{
 //TO DO
 
 /*
+-fix rivers and lakes cutting through mountains - idea for rivers - I believe we already have logic looking for mountains so make that it's own function and run it ever 5 placements of water tiles
 -islandPlacer - currently have some commented out code that I'd like to get back in once we figure out an optimal blend of what size islands make
     for the most realistic looking land masses
 -add world biome total percentage of land
--fix rivers and lakes cutting through mountains
 -Investigate why mountains receive more precipitation even when surrounded by desert on both sides
 -temperature and island size needs to scale to size of map
 -Grid class, privatize the variables again and make getters for them

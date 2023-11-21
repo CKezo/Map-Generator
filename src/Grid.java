@@ -582,7 +582,7 @@ public class Grid extends JPanel{
                     continue;
                 }
                 if(grid[c][r].getColor().equals(landGreen)){
-                    //Neighbors are always listed in this order for direction variable below [east 0, west 1, north 2, south 3] for squares not on top/bottom edge which are omitted in this fucntion
+                    //Neighbors are always listed in this order for direction variable below [east 0, west 1, north 2, south 3] for squares not on top/bottom edge which are omitted in this function
                     for (int direction = 0; direction < grid[c][r].getNeighborCount(); direction++){
                         boolean foundCloseLand = false;
                         GridCell targetCell = grid[c][r].getNeighbors()[direction];
@@ -615,7 +615,7 @@ public class Grid extends JPanel{
                     continue;
                 }
                 if(grid[c][r].getColor().equals(landGreen)){
-                    //Neighbors are always listed in this order for direction variables below [east 0, west 1, north 2, south 3] for squares not on top/bottom edge which are omitted in this fucntion
+                    //Neighbors are always listed in this order for direction variables below [east 0, west 1, north 2, south 3] for squares not on top/bottom edge which are omitted in this function
                     int direction1 = -1;
                     int direction2 = -1;
                     if(grid[c][r].getNeighbors()[2].getNeighbors()[0].getColor().equals(oceanBlue)){ //check northeast neighbor
@@ -648,6 +648,78 @@ public class Grid extends JPanel{
                             }
                         }
                     }
+                }
+            }
+        }
+        repaint();
+    }
+
+    public void fixLongStraightCoasts(){ //if a coast is 15 or more tiles long in a straight line, this will add some more coast tiles to make it look less unnatural
+        for (int c = 0; c < cellColumnCount; c++) {
+            for (int r = 0; r < cellRowCount; r++) {
+                if(r < 2){ //This logic and the else if below are so we don't have to worry about programming for all the edge cases at the poles of the map where very little land spawns anyways.
+                    continue;
+                } else if (r >= cellRowCount - 2) {
+                    continue;
+                }
+
+                //Neighbors are always listed in this order for direction variables below [east 0, west 1, north 2, south 3] for squares not on top/bottom edge which are omitted in this function
+                int numAdjacentOceanSquares = 0;
+                int neighborThatIsOcean = -1;
+                for(int n = 0; n < grid[c][r].getNeighborCount(); n++){
+                    if(grid[c][r].getNeighbors()[n].getColor().equals(oceanBlue)){
+                        numAdjacentOceanSquares++;
+                        neighborThatIsOcean = n;
+                    }
+                }
+                if(numAdjacentOceanSquares == 0 || numAdjacentOceanSquares > 1){
+                    continue;
+                } else {
+                    int searchThisDirection = -1;
+                    if(neighborThatIsOcean == 0 || neighborThatIsOcean == 1){ //to avoid excessive overlap in searching the same cells, we will only search southwards or eastwards depending on the orientation of the adjacent ocean.
+                        searchThisDirection = 3;
+                    } else {
+                        searchThisDirection = 0;
+                    }
+                    GridCell targetCell = grid[c][r].getNeighbors()[searchThisDirection];
+                    boolean haveNotFoundEndOfStraight = true;
+                    int lengthOfStraight = 0;
+                    while(haveNotFoundEndOfStraight){
+                        if(targetCell.getColor().equals(landGreen) && targetCell.getNeighbors()[neighborThatIsOcean].getColor().equals(oceanBlue)){
+                            lengthOfStraight++;
+                            if(targetCell.getNeighbors()[searchThisDirection].equals(null)){
+                                haveNotFoundEndOfStraight = false;
+                            } else {
+                                targetCell = targetCell.getNeighbors()[searchThisDirection];
+                            }
+                        } else {
+                            haveNotFoundEndOfStraight = false;
+                        }
+                    }
+                    if(lengthOfStraight < 10){
+                        continue;
+                    } else {
+                        targetCell = grid[c][r].getNeighbors()[searchThisDirection];
+                        double twoThirds = (double)lengthOfStraight*0.66666;
+                        double oneThird = (double)lengthOfStraight/3.0;
+                        int endNum = (int)twoThirds;
+                        int startNum = (int)oneThird;
+                        for (int i = 0; i < endNum; i++){ //this section is adding a shorter straight stretch of land that is shorter than the original shore on both ends.
+                            if(i < startNum - 1){
+                                targetCell = targetCell.getNeighbors()[searchThisDirection];
+                            } else {
+                                targetCell.getNeighbors()[neighborThatIsOcean].setNextColor(landGreen);
+                                targetCell = targetCell.getNeighbors()[searchThisDirection];
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        for (int c = 0; c < cellColumnCount; c++) {
+            for (int r = 0; r < cellRowCount; r++) {
+                if(!grid[c][r].getNextColor().equals(Color.black) && !grid[c][r].getColor().equals(freshBlue)) { //need the freshblue part to avoid tiny islands in the lakes
+                    grid[c][r].setColor(grid[c][r].getNextColor());
                 }
             }
         }
@@ -2211,8 +2283,9 @@ public class Grid extends JPanel{
     }
 
     public void riverPlacer() {
+        double desiredFreshwaterPercentage = 0.06;
         double freshPercent = 0;
-        while (freshPercent < 0.07) {
+        while (freshPercent < desiredFreshwaterPercentage) {
             int land = 0;
             int mtn = 0;
             int freshWater = 0;
@@ -2231,7 +2304,7 @@ public class Grid extends JPanel{
             }
             freshPercent = ((double) freshWater) / (((double) land) + ((double) mtn) + ((double) freshWater));
             //System.out.println("PercentLand: " + landPercent + " Land: " + land + " Water: " + water);
-            if (freshPercent < 0.07) {
+            if (freshPercent < desiredFreshwaterPercentage) {
                 addRivers();
             }
         }
