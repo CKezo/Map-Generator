@@ -60,13 +60,10 @@ public class Main extends JFrame{
 //TO DO
 
 /*
--fix rivers and lakes cutting through mountains - idea for rivers - I believe we already have logic looking for mountains so make that it's own function and run it ever 5 placements of water tiles
 -islandPlacer - currently have some commented out code that I'd like to get back in once we figure out an optimal blend of what size islands make
     for the most realistic looking land masses
--add world biome total percentage of land
 -Investigate why mountains receive more precipitation even when surrounded by desert on both sides
 -temperature and island size needs to scale to size of map
--Grid class, privatize the variables again and make getters for them
 -lakeplacer I'm fairly sure needs a sufficiently large continent to place the lake farther from oceans so make sure that distance requirement
 is taken into account with variable map sizes
 -looks like past me created temporary neighbor variables just to get the count from that new temporary variable when I could just getNeighborCount directly, clean up

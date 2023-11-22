@@ -24,6 +24,7 @@ public class GridCell {
     private String biome;
     private Color biomeColor;
     private static final Color oceanBlue = new Color(0, 35, 150);
+    private final Color freshBlue = new Color(0, 0, 255);
 
     public GridCell() {
         this.x = 0;
@@ -74,6 +75,16 @@ public class GridCell {
 
     public int getNeighborCount(){
         return neighborCount;
+    }
+
+    public int getRiverNeighborCount(){
+        int total = 0;
+        for(int i = 0; i < getNeighborCount(); i++){
+            if(neighbors[i].color.equals(freshBlue)){
+                total++;
+            }
+        }
+        return total;
     }
 
     public void changeCellColor(Color newColor) {
