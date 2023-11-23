@@ -3,7 +3,7 @@ import java.awt.*;
 
 public class Main extends JFrame{
     private final int WIDTH = 1060;
-    private final int HEIGHT = 675;
+    private final int HEIGHT = 700;
 
     public Main() {
         setPreferredSize(new Dimension(WIDTH, HEIGHT));

@@ -1163,6 +1163,7 @@ public class Grid extends JPanel{
                     double chance = Math.random();
                     if (chance < 0.95) {
                         grid[c][r].setNextColor(freshBlue);
+                        grid[c][r].setLake(true);
                     }
                 }
             }
@@ -1214,6 +1215,7 @@ public class Grid extends JPanel{
 
                 if (freshBlueNum == 4) {
                     grid[c][r].setColor(freshBlue);
+                    grid[c][r].setLake(true);
                 }
             }
         }
@@ -1833,7 +1835,7 @@ public class Grid extends JPanel{
                         Ndist++;
                         r--;
                         if (r < 0) {break;}
-                        if (grid[c][r].getColor().equals(mountainWhite)) {Nmtn = 0.1;}
+                        if (grid[c][r].getColor().equals(mountainWhite)) {Nmtn = .3;}
                         else if (grid[c][r].isRiver() && !riverFound) {NdistRiver = Ndist; riverFound = true;}
                         else if (grid[c][r].isLake() && !lakeFound) {NdistLake = Ndist; lakeFound = true;}
                     }
@@ -1857,7 +1859,7 @@ public class Grid extends JPanel{
                                 c = (cellColumnCount - 1);
                             }
                             if (grid[c][r].getColor().equals(mountainWhite)) {
-                                Wmtn = 0.1;
+                                Wmtn = .3;
                             } else if (grid[c][r].isRiver() && !riverFound) {
                                 WdistRiver = Wdist;
                                 riverFound = true;
@@ -1879,7 +1881,7 @@ public class Grid extends JPanel{
                         Sdist++;
                         r++;
                         if (r >= cellRowCount) {break;}
-                        if (grid[c][r].getColor().equals(mountainWhite)) {Smtn = 0.1;}
+                        if (grid[c][r].getColor().equals(mountainWhite)) {Smtn = .3;}
                         else if (grid[c][r].isRiver() && !riverFound) {SdistRiver = Sdist; riverFound = true;}
                         else if (grid[c][r].isLake() && !lakeFound) {SdistLake = Sdist; lakeFound = true;}
                     }
@@ -1903,7 +1905,7 @@ public class Grid extends JPanel{
                                 c = 0;
                             }
                             if (grid[c][r].getColor().equals(mountainWhite)) {
-                                Emtn = 0.1;
+                                Emtn = .3;
                             } else if (grid[c][r].isRiver() && !riverFound) {
                                 EdistRiver = Edist;
                                 riverFound = true;
@@ -1927,7 +1929,7 @@ public class Grid extends JPanel{
                         c++;
                         if (c >= cellColumnCount) {c = 0;}
                         if (r < 0) {break;}
-                        if (grid[c][r].getColor().equals(mountainWhite)) {NEmtn = 0.1;}
+                        if (grid[c][r].getColor().equals(mountainWhite)) {NEmtn = .3;}
                         else if (grid[c][r].isRiver() && !riverFound) {NEdistRiver = NEdist; riverFound = true;}
                         else if (grid[c][r].isLake() && !lakeFound) {NEdistLake = NEdist; lakeFound = true;}
                     }
@@ -1945,7 +1947,7 @@ public class Grid extends JPanel{
                         c--;
                         if (c < 0) {c = (cellColumnCount-1);}
                         if (r < 0) {break;}
-                        if (grid[c][r].getColor().equals(mountainWhite)) {NWmtn = 0.1;}
+                        if (grid[c][r].getColor().equals(mountainWhite)) {NWmtn = .3;}
                         else if (grid[c][r].isRiver() && !riverFound) {NWdistRiver = NWdist; riverFound = true;}
                         else if (grid[c][r].isLake() && !lakeFound) {NWdistLake = NWdist; lakeFound = true;}
                     }
@@ -1963,7 +1965,7 @@ public class Grid extends JPanel{
                         c++;
                         if (c >= cellColumnCount) {c = 0;}
                         if (r >= cellRowCount) {break;}
-                        if (grid[c][r].getColor().equals(mountainWhite)) {SEmtn = 0.1;}
+                        if (grid[c][r].getColor().equals(mountainWhite)) {SEmtn = .3;}
                         else if (grid[c][r].isRiver() && !riverFound) {SEdistRiver = SEdist; riverFound = true;}
                         else if (grid[c][r].isLake() && !lakeFound) {SEdistLake = SEdist; lakeFound = true;}
                     }
@@ -1981,7 +1983,7 @@ public class Grid extends JPanel{
                         c--;
                         if (c < 0) {c = (cellColumnCount-1);}
                         if (r >= cellRowCount) {break;}
-                        if (grid[c][r].getColor().equals(mountainWhite)) {SWmtn = 0.1;}
+                        if (grid[c][r].getColor().equals(mountainWhite)) {SWmtn = .3;}
                         else if (grid[c][r].isRiver() && !riverFound) {SWdistRiver = SWdist; riverFound = true;}
                         else if (grid[c][r].isLake() && !lakeFound) {SWdistLake = SWdist; lakeFound = true;}
                     }
