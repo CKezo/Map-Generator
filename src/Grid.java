@@ -1830,7 +1830,7 @@ public class Grid extends JPanel{
                 boolean riverFound = false, lakeFound = false;
                 int cloneC = c;
                 int cloneR = r;
-                while (Ncheck == false) {
+                while (Ncheck == false) { //the following section is calculating the distance to nearest lakes/rivers/ocean and seeing if there's a mountain between the ocean and the current gridcell
                     if (grid[c][r].getColor().equals(landGreen) || grid[c][r].getColor().equals(freshBlue) || grid[c][r].getColor().equals(mountainWhite)) {
                         Ndist++;
                         r--;
@@ -1991,28 +1991,43 @@ public class Grid extends JPanel{
                         SWcheck = true;
                     }
                 }
-                riverFound = false; lakeFound = false;
                 c = cloneC;
                 r = cloneR;
                 //console.log(c + " " + r);
                 //console.log(grid[c][r].water);
                 //RIVER AND LAKE ADJACENCY
-                if (NdistRiver > 1.9 && NdistRiver < 2.1 || NdistLake > 1.9 && Ndist < 2.1) {grid[c][r].setWater(0.9);}
-                else if (NEdistRiver > 2.7 && NEdistRiver < 2.9|| NEdistLake > 2.7 && NEdistLake < 2.9) {grid[c][r].setWater(0.9);}
-                else if (NWdistRiver > 2.7 && NWdistRiver < 2.9|| NWdistLake > 2.7 && NWdistLake < 2.9) {grid[c][r].setWater(0.9);}
-                else if (WdistRiver > 1.9 && WdistRiver < 2.1|| WdistLake > 1.9 && WdistLake < 2.1) {grid[c][r].setWater(0.9);}
-                else if (EdistRiver > 1.9 && EdistRiver < 2.1|| EdistLake > 1.9 && EdistLake < 2.1) {grid[c][r].setWater(0.9);}
-                else if (SEdistRiver > 2.7 && SEdistRiver < 2.9|| SEdistLake > 2.7 && SEdistLake < 2.1) {grid[c][r].setWater(0.9);}
-                else if (SWdistRiver > 2.7 && SWdistRiver < 2.9|| SWdistLake > 2.7 && SWdistLake < 2.9) {grid[c][r].setWater(0.9);}
-                else if (SdistRiver > 1.9 && SdistRiver < 2.1 || SdistLake > 1.9 && SdistLake < 2.1) {grid[c][r].setWater(0.9);}
+                if (NdistRiver == 2.0 || NdistLake == 2.0) {
+                    grid[c][r].setWater(0.9);
+                }
+                else if (NEdistRiver == 2.8 || NEdistLake == 2.8) {
+                    grid[c][r].setWater(0.9);
+                }
+                else if (NWdistRiver == 2.8 || NWdistLake == 2.8) {
+                    grid[c][r].setWater(0.9);
+                }
+                else if (WdistRiver == 2.0 || WdistLake == 2.0) {
+                    grid[c][r].setWater(0.9);
+                }
+                else if (EdistRiver == 2.0 || EdistLake == 2.0) {
+                    grid[c][r].setWater(0.9);
+                }
+                else if (SEdistRiver == 2.8 || SEdistLake == 2.8) {
+                    grid[c][r].setWater(0.9);
+                }
+                else if (SWdistRiver == 2.8 || SWdistLake == 2.8) {
+                    grid[c][r].setWater(0.9);
+                }
+                else if (SdistRiver == 2.0 || SdistLake == 2.0) {
+                    grid[c][r].setWater(0.9);
+                }
                 //console.log(grid[c][r].water);
                 double Nwater = 0, NEwater = 0, Ewater = 0, SEwater = 0, Swater = 0, SWwater = 0, Wwater = 0, NWwater = 0;
-                double distModifier = .75;
-                double windBonus = .935;
-                double oppositePenalty = .1;
-                double semiOppositePenalty = .2;
-                double perpendiculars = .45;
-                double slantedWind = .835;
+                double distModifier = .75; //.75 The higher this is, the farther precipitation will make it inland
+                double windBonus = .935; //.935
+                double oppositePenalty = .1; //.1
+                double semiOppositePenalty = .2; //.2
+                double perpendiculars = .45; //.45
+                double slantedWind = .835; //.835
 
                 if (windDirection.equals("north")) {
                     Nwater = (Math.pow(distModifier, Ndist) + ((1 - Math.pow(distModifier, Ndist)) * Math.pow(windBonus, Ndist))) * Nmtn;
