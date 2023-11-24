@@ -8,7 +8,13 @@ public class MouseListenerClass extends Grid implements MouseListener {
         if(mouseX >= 0 && mouseX < getCellColumnCount() && mouseY >= 0 && mouseY < getCellRowCount()){
             System.out.println((int)mouseX + " " + (int)mouseY);
             GridCell cell = Main.getGameGrid().getCellAtXY((int)mouseX, (int)mouseY);
-            System.out.println(cell.getBiome());
+            if(cell.isLake()){
+                System.out.println("Lake");
+            } else if (cell.isRiver()) {
+                System.out.println("River");
+            } else {
+                System.out.println(cell.getBiome());
+            }
         }
         System.out.println("____________");
     }

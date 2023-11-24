@@ -27,6 +27,9 @@ public class KeyListenerClass extends Grid implements KeyListener{
         if(e.getKeyChar() == 'a') {
             grid.drawAvgTempMap();
         }
+        if(e.getKeyChar() == KeyEvent.VK_ESCAPE){
+            System.exit(0);
+        }
         if(e.getKeyChar() == '9') {
             Main.newMap();
             windComesFrom = "west";

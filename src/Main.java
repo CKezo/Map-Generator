@@ -9,13 +9,28 @@ public class Main extends JFrame{
         setPreferredSize(new Dimension(WIDTH, HEIGHT));
         setMinimumSize(new Dimension(WIDTH, HEIGHT));
         setResizable(false);
+
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
         setLocationRelativeTo(null);
+
+        //Return to below when you integrate the system output in the terminal into the main program
+//        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+//        GraphicsDevice gd = ge.getDefaultScreenDevice();
+//        if(gd.isFullScreenSupported()){
+//            setUndecorated(true);
+//            gd.setFullScreenWindow(this);
+//        } else {
+//            System.err.println("Full screen not supported");
+//            setPreferredSize(new Dimension(WIDTH, HEIGHT));
+//            setMinimumSize(new Dimension(WIDTH, HEIGHT));
+//        }
+
         KeyListenerClass theKeyListener = new KeyListenerClass();
         theKeyListener.addKeyListener(theKeyListener);
         theKeyListener.setFocusable(true);
         add(theKeyListener);
+
         MouseListenerClass theMouseListener = new MouseListenerClass();
         this.addMouseListener(theMouseListener);
         theMouseListener.setFocusable(true);
