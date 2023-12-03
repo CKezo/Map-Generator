@@ -1868,28 +1868,28 @@ public class Grid extends JPanel{
                 //console.log(grid[c][r].water);
                 //RIVER AND LAKE ADJACENCY
                 if (NdistRiver == 2.0 || NdistLake == 2.0) {
-                    grid[c][r].setWater(0.9);
+                    grid[c][r].setWater(0.8);
                 }
                 else if (NEdistRiver == 2.8 || NEdistLake == 2.8) {
-                    grid[c][r].setWater(0.9);
+                    grid[c][r].setWater(0.8);
                 }
                 else if (NWdistRiver == 2.8 || NWdistLake == 2.8) {
-                    grid[c][r].setWater(0.9);
+                    grid[c][r].setWater(0.8);
                 }
                 else if (WdistRiver == 2.0 || WdistLake == 2.0) {
-                    grid[c][r].setWater(0.9);
+                    grid[c][r].setWater(0.8);
                 }
                 else if (EdistRiver == 2.0 || EdistLake == 2.0) {
-                    grid[c][r].setWater(0.9);
+                    grid[c][r].setWater(0.8);
                 }
                 else if (SEdistRiver == 2.8 || SEdistLake == 2.8) {
-                    grid[c][r].setWater(0.9);
+                    grid[c][r].setWater(0.8);
                 }
                 else if (SWdistRiver == 2.8 || SWdistLake == 2.8) {
-                    grid[c][r].setWater(0.9);
+                    grid[c][r].setWater(0.8);
                 }
                 else if (SdistRiver == 2.0 || SdistLake == 2.0) {
-                    grid[c][r].setWater(0.9);
+                    grid[c][r].setWater(0.8);
                 }
                 //console.log(grid[c][r].water);
                 double Nwater = 0, NEwater = 0, Ewater = 0, SEwater = 0, Swater = 0, SWwater = 0, Wwater = 0, NWwater = 0;

@@ -75,6 +75,10 @@ public class Main extends JFrame{
 //TO DO
 
 /*
+-precipitation fix for how rivers/lakes affect systems - since the lakes on our map only represent giant lakes, they can still generate
+    some nearby precipitation. River adjacency will no longer raise water to .8-.9 in adjacent spaces - for this, we simply want to change
+    the biome from desert to grassland, grassland to deciduous forest, savana to rainforest. However, come back and give this approach
+    some more thought about how this would fit in with a potential evolution simulator in terms of actual water availability in the square.
 -islandPlacer - currently have some commented out code that I'd like to get back in once we figure out an optimal blend of what size islands make
     for the most realistic looking land masses
 -Investigate why mountains receive more precipitation even when surrounded by desert on both sides
