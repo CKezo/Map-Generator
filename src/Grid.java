@@ -5,10 +5,10 @@ import java.util.ArrayList;
 
 
 public class Grid extends JPanel{
-    private final int cellColumnCount = 250;   //125
-    private final int cellRowCount = 125;  //80
-    private static final int cellWidth = 4; //7
-    private static final int cellHeight = 4; //7
+    private final int cellColumnCount = 250;   //250
+    private final int cellRowCount = 125;  //125
+    private static final int cellWidth = 4 ; //4
+    private static final int cellHeight = 4; //4
     private static int leftInset = 0;
     private static int topInset = 0;
     private static final int topBlackspace = 20;
@@ -727,7 +727,6 @@ public class Grid extends JPanel{
     }
 
     public void lakeMaker(double trimEdge) {
-        //for (int lake = 0; lake < 100; lake++) {
         boolean lakePlaced = false;
         while(lakePlaced == false) {
             int lakeX = (int) (Math.floor(Math.random() * (cellColumnCount)));
@@ -1346,286 +1345,152 @@ public class Grid extends JPanel{
         }
     }
 
-    public void addRivers() {
+    public void addRiver() {
         try {
             double Ndist = 0, NEdist = 0, Edist = 0, SEdist = 0, Sdist = 0, SWdist = 0, Wdist = 0, NWdist = 0;
-            int lakeX = (int) (Math.floor(Math.random() * (cellColumnCount)));
-            int lakeY = (int) (Math.floor(Math.random() * (cellRowCount - 10) + 5));
-            if (lakeY >= cellRowCount) {
-                lakeY = (cellRowCount - 1);
+            int x = (int) (Math.floor(Math.random() * (cellColumnCount)));
+            int y = (int) (Math.floor(Math.random() * (cellRowCount - 10) + 5)); //stops program from picking points near poles that won't work well
+            if (y >= cellRowCount) {
+                y = (cellRowCount - 1);
             }
-            int cloneX = lakeX;
-            int cloneY = lakeY;
-            boolean tooCloseN = false, tooCloseNE = false, tooCloseE = false, tooCloseSE = false, tooCloseS = false, tooCloseSW = false, tooCloseW = false, tooCloseNW = false;
-            if (grid[lakeX][lakeY].getColor().equals(mountainWhite)) { //don't want to start on a mountain
-                tooCloseN = true;
+            boolean onMountain = false;
+            if (grid[x][y].getColor().equals(mountainWhite)) { //don't want to start on a mountain
+                onMountain = true;
             }
-            if(!tooCloseN) {
-                for (int i = 0; i < 8; i++) {
+            if(!onMountain) {
+                for (int i = 0; i < 8; i++) { //checking cardinal directions
                     Ndist--;
-                    //this and below making sure our river doesn't start it's course too close to an ocean or another freshwater square, prefer fewer but longer rivers
-                    if (grid[lakeX][(cellRowCount + lakeY + (int) Ndist) % cellRowCount].getColor().equals(oceanBlue) || grid[lakeX][(cellRowCount + lakeY + (int) Ndist) % cellRowCount].getColor().equals(freshBlue)) {
+                    //this and below making sure our river doesn't start its course too close to an ocean or another freshwater square, prefer fewer but longer rivers
+                    if (grid[x][(cellRowCount + y + (int) Ndist) % cellRowCount].getColor().equals(oceanBlue) || grid[x][(cellRowCount + y + (int) Ndist) % cellRowCount].getColor().equals(freshBlue)) {
                         return;
                     }
-                }
-                for (int i = 0; i < 8; i++) {
                     Wdist--;
-                    if (grid[(cellColumnCount + (lakeX + (int) Wdist)) % cellColumnCount][lakeY].getColor().equals(oceanBlue) || grid[(cellColumnCount + (lakeX + (int) Wdist)) % cellColumnCount][lakeY].getColor().equals(freshBlue)) {
+                    if (grid[(cellColumnCount + (x + (int) Wdist)) % cellColumnCount][y].getColor().equals(oceanBlue) || grid[(cellColumnCount + (x + (int) Wdist)) % cellColumnCount][y].getColor().equals(freshBlue)) {
                         return;
                     }
-                }
-                for (int i = 0; i < 8; i++) {
                     Sdist++;
-                    if (grid[lakeX][(lakeY + (int) Sdist) % cellRowCount].getColor().equals(oceanBlue) || grid[lakeX][(lakeY + (int) Sdist) % cellRowCount].getColor().equals(freshBlue)) {
+                    if (grid[x][(y + (int) Sdist) % cellRowCount].getColor().equals(oceanBlue) || grid[x][(y + (int) Sdist) % cellRowCount].getColor().equals(freshBlue)) {
                         return;
                     }
-                }
-                for (int i = 0; i < 8; i++) {
                     Edist++;
-                    if (grid[(lakeX + (int) Edist) % cellColumnCount][lakeY].getColor().equals(oceanBlue) || grid[(lakeX + (int) Edist) % cellColumnCount][lakeY].getColor().equals(freshBlue)) {
+                    if (grid[(x + (int) Edist) % cellColumnCount][y].getColor().equals(oceanBlue) || grid[(x + (int) Edist) % cellColumnCount][y].getColor().equals(freshBlue)) {
                         return;
                     }
                 }
-                for (int i = 0; i < 7; i++) {
+                for (int i = 0; i < 7; i++) { //checking diagonal directions
                     NWdist++;
-                    if (grid[(cellColumnCount + lakeX - (int) NWdist) % cellColumnCount][(cellRowCount + lakeY - (int) NWdist) % cellRowCount].getColor().equals(oceanBlue) || grid[(cellColumnCount + lakeX - (int) NWdist) % cellColumnCount][(cellRowCount + lakeY - (int) NWdist) % cellRowCount].getColor().equals(freshBlue)) {
+                    if (grid[(cellColumnCount + x - (int) NWdist) % cellColumnCount][(cellRowCount + y - (int) NWdist) % cellRowCount].getColor().equals(oceanBlue) || grid[(cellColumnCount + x - (int) NWdist) % cellColumnCount][(cellRowCount + y - (int) NWdist) % cellRowCount].getColor().equals(freshBlue)) {
                         return;
                     }
-                }
-                for (int i = 0; i < 7; i++) {
                     SWdist++;
-                    if (grid[(cellColumnCount + lakeX - (int) SWdist) % cellColumnCount][(lakeY + (int) SWdist) % cellRowCount].getColor().equals(oceanBlue) || grid[(cellColumnCount + lakeX - (int) SWdist) % cellColumnCount][(lakeY + (int) SWdist) % cellRowCount].getColor().equals(freshBlue)) {
+                    if (grid[(cellColumnCount + x - (int) SWdist) % cellColumnCount][(y + (int) SWdist) % cellRowCount].getColor().equals(oceanBlue) || grid[(cellColumnCount + x - (int) SWdist) % cellColumnCount][(y + (int) SWdist) % cellRowCount].getColor().equals(freshBlue)) {
                         return;
                     }
-                }
-                for (int i = 0; i < 7; i++) {
                     SEdist++;
-                    if (grid[(lakeX + (int) SEdist) % cellColumnCount][(lakeY + (int) SEdist) % cellRowCount].getColor().equals(oceanBlue) || grid[(lakeX + (int) SEdist) % cellColumnCount][(lakeY + (int) SEdist) % cellRowCount].getColor().equals(freshBlue)) {
+                    if (grid[(x + (int) SEdist) % cellColumnCount][(y + (int) SEdist) % cellRowCount].getColor().equals(oceanBlue) || grid[(x + (int) SEdist) % cellColumnCount][(y + (int) SEdist) % cellRowCount].getColor().equals(freshBlue)) {
                         return;
                     }
-                }
-                for (int i = 0; i < 7; i++) {
                     NEdist++;
-                    if (grid[(lakeX + (int) NEdist) % cellColumnCount][(cellRowCount + lakeY - (int) NEdist) % cellRowCount].getColor().equals(oceanBlue) || grid[(lakeX + (int) NEdist) % cellColumnCount][(cellRowCount + lakeY - (int) NEdist) % cellRowCount].getColor().equals(freshBlue)) {
+                    if (grid[(x + (int) NEdist) % cellColumnCount][(cellRowCount + y - (int) NEdist) % cellRowCount].getColor().equals(oceanBlue) || grid[(x + (int) NEdist) % cellColumnCount][(cellRowCount + y - (int) NEdist) % cellRowCount].getColor().equals(freshBlue)) {
                         return;
                     }
                 }
             }
-            Ndist = 0;
-            NEdist = 0;
-            Edist = 0;
-            SEdist = 0;
-            Sdist = 0;
-            SWdist = 0;
-            Wdist = 0;
-            NWdist = 0;
-            for (int i = 0; i < (cellRowCount); i++) {
-                if (grid[lakeX][lakeY].getColor().equals(landGreen)) { //this section and similar ones below look in a given direction until it finds the nearest water to merge into and keeps track of that distance. Mountains are given arbitrarily high value to indicate a river should avoid flowing that way.
-                    Ndist++;
-                    lakeY--;
-                } else if (grid[lakeX][lakeY].getColor().equals(oceanBlue) || grid[lakeX][lakeY].getColor().equals(freshBlue)) {
-                    break;
-                } else if (grid[lakeX][lakeY].getColor().equals(mountainWhite)) {
-                    Ndist = 1000;
-                    break;
-                }
-            }
-            lakeX = cloneX;
-            lakeY = cloneY;
-            for (int i = 0; i < (cellRowCount); i++) {
-                if (grid[lakeX][lakeY].getColor().equals(landGreen)) {
-                    NEdist += 1.4;
-                    lakeY--;
-                    lakeX++;
-                    if (lakeX < 0) {
-                        lakeX = (cellColumnCount - 1);
-                    } else if (lakeX >= cellColumnCount) {
-                        lakeX = 0;
-                    }
-                } else if (grid[lakeX][lakeY].getColor().equals(oceanBlue) || grid[lakeX][lakeY].getColor().equals(freshBlue)) {
-                    break;
-                } else if (grid[lakeX][lakeY].getColor().equals(mountainWhite)) {
-                    NEdist = 1000;
-                    break;
-                }
-            }
-            lakeX = cloneX;
-            lakeY = cloneY;
-            //int eastCounter = 0;
-            //while (Echeck == false /*|| eastCounter < 126) {
-            for (int i = 0; i < (cellColumnCount + 1); i++) {
-                if (grid[lakeX][lakeY].getColor().equals(landGreen)) {
-                    Edist++;
-                    lakeX++;
-                    if (lakeX < 0) {
-                        lakeX = (cellColumnCount - 1);
-                    } else if (lakeX >= cellColumnCount) {
-                        lakeX = 0;
-                    }
-                } else if (grid[lakeX][lakeY].getColor().equals(oceanBlue) || grid[lakeX][lakeY].getColor().equals(freshBlue)) {
-                    break;
-                } else if (grid[lakeX][lakeY].getColor().equals(mountainWhite)) {
-                    Edist = 1000;
-                    break;
-                }
-            }
-            lakeX = cloneX;
-            lakeY = cloneY;
-            for (int i = 0; i < (cellRowCount); i++) {
-                if (grid[lakeX][lakeY].getColor().equals(landGreen)) {
-                    SEdist += 1.4;
-                    lakeX++;
-                    lakeY++;
-                    if (lakeX < 0) {
-                        lakeX = (cellColumnCount - 1);
-                    } else if (lakeX >= cellColumnCount) {
-                        lakeX = 0;
-                    }
-                } else if (grid[lakeX][lakeY].getColor().equals(oceanBlue) || grid[lakeX][lakeY].getColor().equals(freshBlue)) {
-                    break;
-                } else if (grid[lakeX][lakeY].getColor().equals(mountainWhite)) {
-                    SEdist = 1000;
-                    break;
-                }
-            }
-            lakeX = cloneX;
-            lakeY = cloneY;
-            for (int i = 0; i < (cellRowCount); i++) {
-                if (grid[lakeX][lakeY].getColor().equals(landGreen)) {
-                    Sdist++;
-                    lakeY++;
-                    if (lakeY >= cellRowCount) {
-                        lakeY = (cellRowCount - 1);
-                    }
-                } else if (grid[lakeX][lakeY].getColor().equals(oceanBlue) || grid[lakeX][lakeY].getColor().equals(freshBlue)) {
-                    break;
-                } else if (grid[lakeX][lakeY].getColor().equals(mountainWhite)) {
-                    Sdist = 1000;
-                    break;
-                }
-            }
-            lakeX = cloneX;
-            lakeY = cloneY;
-            for (int i = 0; i < (cellRowCount); i++) {
-                if (grid[lakeX][lakeY].getColor().equals(landGreen)) {
-                    SWdist += 1.4;
-                    lakeY++;
-                    lakeX--;
-                    if (lakeY >= cellRowCount) {
-                        lakeY = (cellRowCount - 1);
-                    }
-                    if (lakeX < 0) {
-                        lakeX = (cellColumnCount - 1);
-                    } else if (lakeX >= cellColumnCount) {
-                        lakeX = 0;
-                    }
-                } else if (grid[lakeX][lakeY].getColor().equals(oceanBlue) || grid[lakeX][lakeY].getColor().equals(freshBlue)) {
-                    break;
-                } else if (grid[lakeX][lakeY].getColor().equals(mountainWhite)) {
-                    SWdist = 1000;
-                    break;
-                }
-            }
-            lakeX = cloneX;
-            lakeY = cloneY;
-            for (int i = 0; i < (cellColumnCount + 1); i++) {
-                if (grid[lakeX][lakeY].getColor().equals(landGreen)) {
-                    Wdist++;
-                    lakeX--;
-                    if (lakeX < 0) {
-                        lakeX = (cellColumnCount - 1);
-                    } else if (lakeX >= cellColumnCount) {
-                        lakeX = 0;
-                    }
-                } else if (grid[lakeX][lakeY].getColor().equals(oceanBlue) || grid[lakeX][lakeY].getColor().equals(freshBlue)) {
-                    break;
-                } else if (grid[lakeX][lakeY].getColor().equals(mountainWhite)) {
-                    Wdist = 1000;
-                    break;
-                }
-            }
-            lakeX = cloneX;
-            lakeY = cloneY;
-            for (int i = 0; i < (cellRowCount); i++) {
-                if (grid[lakeX][lakeY].getColor().equals(landGreen)) {
-                    NWdist += 1.4;
-                    lakeX--;
-                    lakeY--;
-                    if (lakeX < 0) {
-                        lakeX = (cellColumnCount - 1);
-                    } else if (lakeX >= cellColumnCount) {
-                        lakeX = 0;
-                    }
-                } else if (grid[lakeX][lakeY].getColor().equals(oceanBlue) || grid[lakeX][lakeY].getColor().equals(freshBlue)) {
-                    break;
-                } else if (grid[lakeX][lakeY].getColor().equals(mountainWhite)) {
-                    NWdist = 1000;
-                    break;
-                }
-            }
-            lakeX = cloneX;
-            lakeY = cloneY;
 
-            int NdistInt = (int) Ndist;
-            int NEdistInt = (int) NEdist;
-            int EdistInt = (int) Edist;
-            int SEdistInt = (int) SEdist;
-            int SdistInt = (int) Sdist;
-            int SWdistInt = (int) SWdist;
-            int WdistInt = (int) Wdist;
-            int NWdistInt = (int) NWdist;
+            //below figures out the distances to other water squares and mountains to help figure out which direction for the river to move in
+            int NdistInt = distanceToWaterAndMountainsRiverHelper(x,y, 0, -1);
+            int NEdistInt = distanceToWaterAndMountainsRiverHelper(x,y, 1, -1);
+            int EdistInt = distanceToWaterAndMountainsRiverHelper(x,y, 1, 0);
+            int SEdistInt = distanceToWaterAndMountainsRiverHelper(x,y, 1, 1);
+            int SdistInt = distanceToWaterAndMountainsRiverHelper(x,y, 0, 1);
+            int SWdistInt = distanceToWaterAndMountainsRiverHelper(x,y, -1, 1);
+            int WdistInt = distanceToWaterAndMountainsRiverHelper(x,y, -1, 0);
+            int NWdistInt = distanceToWaterAndMountainsRiverHelper(x,y, -1, -1);
 
             int closestDist = (Math.min(NdistInt, Math.min(NEdistInt, Math.min(EdistInt, Math.min(SEdistInt, Math.min(SdistInt, Math.min(SWdistInt, Math.min(WdistInt, NWdistInt))))))));
 
             int xMove, yMove;
-            int yCount = 0, xCount = 0;
-            int posDirection = 0, negDirection = 0;
-            int blueCount = 0;
 
             if (closestDist == NdistInt) {
                 yMove = -1;
                 xMove = 1;
-                addNandSRiversHelperMethod(lakeX,lakeY, xMove, yMove);
+                addNandSRiversPlacementHelperMethod(x,y, xMove, yMove);
             } else if (closestDist == NEdistInt) {
                 yMove = -1;
                 xMove = 1;
-                addDiagonalRiversHelperMethod(lakeX, lakeY, xMove, yMove);
+                addDiagonalRiversPlacementHelperMethod(x, y, xMove, yMove);
             } else if (closestDist == EdistInt) {
                 yMove = 1;
                 xMove = 1;
-                addEandWRiversHelperMethod(lakeX, lakeY, xMove, yMove);
+                addEandWRiversPlacementHelperMethod(x, y, xMove, yMove);
             } else if (closestDist == SEdistInt) {
                 yMove = 1;
                 xMove = 1;
-                addDiagonalRiversHelperMethod(lakeX, lakeY, xMove, yMove);
+                addDiagonalRiversPlacementHelperMethod(x, y, xMove, yMove);
             } else if (closestDist == SdistInt) {
                 yMove = 1;
                 xMove = 1;
-                addNandSRiversHelperMethod(lakeX,lakeY, xMove, yMove);
+                addNandSRiversPlacementHelperMethod(x,y, xMove, yMove);
             } else if (closestDist == SWdistInt) {
                 yMove = 1;
                 xMove = -1;
-                addDiagonalRiversHelperMethod(lakeX, lakeY, xMove, yMove);
+                addDiagonalRiversPlacementHelperMethod(x, y, xMove, yMove);
             } else if (closestDist == WdistInt) {
                 yMove = 1;
                 xMove = -1;
-                addEandWRiversHelperMethod(lakeX, lakeY, xMove, yMove);
+                addEandWRiversPlacementHelperMethod(x, y, xMove, yMove);
             } else if (closestDist == NWdistInt) {
                 yMove = -1;
                 xMove = -1;
-                addDiagonalRiversHelperMethod(lakeX, lakeY, xMove, yMove);
+                addDiagonalRiversPlacementHelperMethod(x, y, xMove, yMove);
             }
         } catch (ArrayIndexOutOfBoundsException e){
             return;
         }
     }
 
-    public void addDiagonalRiversHelperMethod(int x, int y, int xMove, int yMove){
+    public int distanceToWaterAndMountainsRiverHelper(int x, int y, int xDirection, int yDirection){
+        double distance = 0;
+        int maxCellsToCheck = 0;
+        if (cellColumnCount < cellRowCount){
+            maxCellsToCheck = cellRowCount;
+        } else {
+            maxCellsToCheck = cellColumnCount;
+        }
+        for (int i = 0; i < maxCellsToCheck; i++) {
+            if (grid[x][y].getColor().equals(landGreen)) {
+                if(xDirection == 0 || yDirection == 0){ //for cardinal directions
+                    distance++;
+                } else { //for diagonal directions
+                    distance += 1.4;
+                }
+                x += xDirection;
+                y += yDirection;
+                if (x < 0) {
+                    x = (cellColumnCount - 1);
+                } else if (x >= cellColumnCount) {
+                    x = 0;
+                }
+                if (y < 0 || y >= cellColumnCount){
+                    return (int)Math.round(distance);
+                }
+            } else if (grid[x][y].getColor().equals(oceanBlue) || grid[x][y].getColor().equals(freshBlue)) {
+                return (int)Math.round(distance);
+            } else if (grid[x][y].getColor().equals(mountainWhite)) {
+                distance = 1000000; //arbitrarily large number to dissuade rivers from trying to flow into mountains
+                return (int)Math.round(distance);
+            }
+        }
+        System.out.println("Something went wrong in the distanceToWaterAndMountainsRiverHelper");
+        return (int)Math.round(distance);
+    }
+
+    public void addDiagonalRiversPlacementHelperMethod(int x, int y, int xMove, int yMove){
         int yCount = 0;
         int posDirection = 0, negDirection = 0;
         int waterNeighbor = 0;
-        ArrayList<Integer> xPotentialRiverCoords = new ArrayList<Integer>();
-        ArrayList<Integer> yPotentialRiverCoords = new ArrayList<Integer>();
+        ArrayList<Integer> xPotentialRiverCoords = new ArrayList<>();
+        ArrayList<Integer> yPotentialRiverCoords = new ArrayList<>();
         boolean hasHitMountains = false;
         while (waterNeighbor < 1) {
             if (grid[x][y].isCoast()) {
@@ -1642,10 +1507,10 @@ public class Grid extends JPanel{
             xPotentialRiverCoords.add(x);
             yPotentialRiverCoords.add(y);
             double flowDirection = Math.random();
-            if (flowDirection < 0.5) {
+            if (flowDirection < 0.5 && yCount < 7) {
                 y += yMove;
                 yCount++;
-            } else if ((flowDirection < 0.83 && yCount >= 2) || (flowDirection < 0.83 && negDirection == 0)) {
+            } else if ((flowDirection < 0.75 && yCount >= 2) || (flowDirection < 0.75 && negDirection == 0)) {
                 x += xMove;
                 if (x < 0) {
                     x = (cellColumnCount - 1);
@@ -1678,12 +1543,12 @@ public class Grid extends JPanel{
         }
     }
 
-    public void addEandWRiversHelperMethod(int x, int y, int xMove, int yMove){
+    public void addEandWRiversPlacementHelperMethod(int x, int y, int xMove, int yMove){
         int xCount = 0;
         int posDirection = 0, negDirection = 0;
         int waterNeighbor = 0;
-        ArrayList<Integer> xPotentialRiverCoords = new ArrayList<Integer>();
-        ArrayList<Integer> yPotentialRiverCoords = new ArrayList<Integer>();
+        ArrayList<Integer> xPotentialRiverCoords = new ArrayList<>();
+        ArrayList<Integer> yPotentialRiverCoords = new ArrayList<>();
         boolean hasHitMountains = false;
         while (waterNeighbor < 1) {
             if (grid[x][y].isCoast()) {
@@ -1700,7 +1565,7 @@ public class Grid extends JPanel{
             xPotentialRiverCoords.add(x);
             yPotentialRiverCoords.add(y);
             double flowDirection = Math.random();
-            if (flowDirection < 0.66) {
+            if (flowDirection < 0.66 && xCount < 7) {
                 x += xMove;
                 if (x < 0) {
                     x = (cellColumnCount - 1);
@@ -1731,12 +1596,12 @@ public class Grid extends JPanel{
         }
     }
 
-    public void addNandSRiversHelperMethod(int x, int y, int xMove, int yMove){
+    public void addNandSRiversPlacementHelperMethod(int x, int y, int xMove, int yMove){
         int yCount = 0;
         int posDirection = 0, negDirection = 0;
         int waterNeighbor = 0;
-        ArrayList<Integer> xPotentialRiverCoords = new ArrayList<Integer>();
-        ArrayList<Integer> yPotentialRiverCoords = new ArrayList<Integer>();
+        ArrayList<Integer> xPotentialRiverCoords = new ArrayList<>();
+        ArrayList<Integer> yPotentialRiverCoords = new ArrayList<>();
         boolean hasHitMountains = false;
         while (waterNeighbor < 1) {
             if (grid[x][y].isCoast()) {
@@ -1753,7 +1618,7 @@ public class Grid extends JPanel{
             xPotentialRiverCoords.add(x);
             yPotentialRiverCoords.add(y);
             double flowDirection = Math.random();
-            if (flowDirection < 0.66) {
+            if (flowDirection < 0.66 && yCount < 7) { //river is most likely to flow in the direction of the nearest water
                 y += yMove;
                 yCount++;
             } else if ((flowDirection < 0.83 && yCount >= 2) || (flowDirection < 0.83 && negDirection == 0)) {
@@ -1766,7 +1631,7 @@ public class Grid extends JPanel{
                 posDirection++;
                 yCount = 0;
                 negDirection = 0;
-            } else if ((flowDirection < 1 && yCount >= 2) || (flowDirection < 1 && posDirection == 0)) {
+            } else if (yCount >= 2 || posDirection == 0) {
                 x -= xMove;
                 if (x < 0) {
                     x = (cellColumnCount - 1);
@@ -1810,9 +1675,8 @@ public class Grid extends JPanel{
                 }
             }
             freshPercent = ((double) freshWater) / (((double) land) + ((double) mtn) + ((double) freshWater));
-            //System.out.println("PercentLand: " + landPercent + " Land: " + land + " Water: " + water);
             if (freshPercent < desiredFreshwaterPercentage) {
-                addRivers();
+                addRiver();
             }
         }
         noOneSquareIslands();
@@ -1827,6 +1691,7 @@ public class Grid extends JPanel{
                 double Nmtn = 1, NEmtn = 1, Emtn = 1, SEmtn = 1, Smtn = 1, SWmtn = 1, Wmtn = 1, NWmtn = 1;
                 double NdistRiver = 0, NEdistRiver = 0, EdistRiver = 0, SEdistRiver = 0, SdistRiver = 0, SWdistRiver = 0, WdistRiver = 0, NWdistRiver = 0;
                 double NdistLake = 0, NEdistLake = 0, EdistLake = 0, SEdistLake = 0, SdistLake = 0, SWdistLake = 0, WdistLake = 0, NWdistLake = 0;
+
                 boolean riverFound = false, lakeFound = false;
                 int cloneC = c;
                 int cloneR = r;
@@ -1836,8 +1701,14 @@ public class Grid extends JPanel{
                         r--;
                         if (r < 0) {break;}
                         if (grid[c][r].getColor().equals(mountainWhite)) {Nmtn = .3;}
-                        else if (grid[c][r].isRiver() && !riverFound) {NdistRiver = Ndist; riverFound = true;}
-                        else if (grid[c][r].isLake() && !lakeFound) {NdistLake = Ndist; lakeFound = true;}
+                        else if (grid[c][r].isRiver() && !riverFound) {
+                            NdistRiver = Ndist;
+                            riverFound = true;
+                        }
+                        else if (grid[c][r].isLake() && !lakeFound) {
+                            NdistLake = Ndist;
+                            lakeFound = true;
+                        }
                     }
                     else if (grid[c][r].getColor().equals(oceanBlue)) {
                         Ncheck = true;
@@ -2024,10 +1895,10 @@ public class Grid extends JPanel{
                 double Nwater = 0, NEwater = 0, Ewater = 0, SEwater = 0, Swater = 0, SWwater = 0, Wwater = 0, NWwater = 0;
                 double distModifier = .75; //.75 The higher this is, the farther precipitation will make it inland
                 double windBonus = .935; //.935
-                double oppositePenalty = .1; //.1
-                double semiOppositePenalty = .2; //.2
-                double perpendiculars = .45; //.45
                 double slantedWind = .835; //.835
+                double perpendiculars = .45; //.55
+                double semiOppositePenalty = .2; //.4
+                double oppositePenalty = .33; //.1
 
                 if (windDirection.equals("north")) {
                     Nwater = (Math.pow(distModifier, Ndist) + ((1 - Math.pow(distModifier, Ndist)) * Math.pow(windBonus, Ndist))) * Nmtn;
