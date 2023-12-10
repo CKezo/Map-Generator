@@ -56,7 +56,7 @@ public class Main extends JFrame{
         gameGrid.fixLongStraightCoasts();
         gameGrid.defineCoasts();
         gameGrid.mountainPlacer();
-        gameGrid.riverPlacer();
+        //gameGrid.riverPlacer();
         gameGrid.storeTrueColor();
         gameGrid.defineWaterAvail("west");
         frame.add(gameGrid);
@@ -78,7 +78,11 @@ public class Main extends JFrame{
 -precipitation fix for how rivers/lakes affect systems - since the lakes on our map only represent giant lakes, they can still generate
     some nearby precipitation. River adjacency will no longer raise water to .8-.9 in adjacent spaces - for this, we simply want to change
     the biome from desert to grassland, grassland to deciduous forest, savana to rainforest. However, come back and give this approach
-    some more thought about how this would fit in with a potential evolution simulator in terms of actual water availability in the square.
+    some more thought about how this would fit in with a potential evolution simulator in terms of actual water availability in the square. Just
+    set the water number in the adjacent squares to a set number based on what would qualify it for the corresponding biomes based on heat/current water.
+-Optimization - No reason to calculate the exact rainfall for all cells especially when we are averaging the values across neighbors multiple times anyways.
+    Can probably calculate every other square, and set the non-calculated squares to be a simple average of their neighbor cells instead of computing the distance
+    in all 8 directions for every single cell. Once that's done, the further averaging out of water levels will smooth things over.
 -islandPlacer - currently have some commented out code that I'd like to get back in once we figure out an optimal blend of what size islands make
     for the most realistic looking land masses
 -Investigate why mountains receive more precipitation even when surrounded by desert on both sides

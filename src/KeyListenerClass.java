@@ -55,6 +55,10 @@ public class KeyListenerClass extends Grid implements KeyListener{
         if(e.getKeyChar() == '7') {
             grid.fixLongStraightCoasts();
         }
+        if(e.getKeyChar() == '8') {
+            grid.addRiver();
+            grid.repaint();
+        }
         if(e.getKeyChar() == 'd') {
             if (windComesFrom.equals("west")) {
                 grid.drawEarthMap();
