@@ -56,7 +56,7 @@ public class Main extends JFrame{
         gameGrid.fixLongStraightCoasts();
         gameGrid.defineCoasts();
         gameGrid.mountainPlacer();
-        //gameGrid.riverPlacer();
+        gameGrid.riverPlacer();
         gameGrid.storeTrueColor();
         gameGrid.defineWaterAvail("west");
         frame.add(gameGrid);

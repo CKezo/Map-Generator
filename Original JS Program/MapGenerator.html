@@ -1,0 +1,3680 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Gamedev Canvas Workshop</title>
+    <style>
+    	* { padding: 0; margin: 0; }
+    	canvas { background: #161616; display: block; margin: 0 auto; }
+    </style>
+</head>
+<body>
+
+<canvas id="myCanvas" width="875" height="640"></canvas>
+
+<script>
+var canvas = document.getElementById("myCanvas");
+var ctx = canvas.getContext("2d");
+
+var cellColumnCount = 215;
+var cellRowCount = 140;
+var cellWidth = 4;
+var cellHeight = 4;
+var cellPadding = 0
+var cellOffsetTop = 0;
+var cellOffsetLeft = 0;
+
+var blue = '#1000cc'
+var freshBlue = '#0000ff'  //Lake
+var freshBlue1 = '#0000ff'		//River
+var red = '#FF0000'
+var green = '#00b700'
+var white = '#dddddd'
+var black = '#000000'
+
+let globalAvgHigh = 0;
+let globalAvgLow = 100;
+let globalMaxHigh = 0;
+let globalMaxLow = 100;
+let globalMinHigh = 0;
+let globalMinLow = 100;
+
+let windComesFrom = "west";
+let globalCarbonLevels = 1;
+
+var grid = [];	
+for(c=0; c<cellColumnCount; c++) {
+    grid[c] = [];
+    for(r=0; r<cellRowCount; r++) {
+		grid[c][r] = {x: 0, y: 0, color: '#000000', neighbors: [], speciesPresent: []};
+    }
+}
+
+function initialGridDrawer() {			
+     for(c=0; c<cellColumnCount; c++) {
+		for(r=0; r<cellRowCount; r++) {
+			let x = (c*(cellWidth+cellPadding))+cellOffsetLeft;
+			let y = (r*(cellHeight+cellPadding))+cellOffsetTop;
+			color = blue;
+			grid[c][r].x = x;
+			grid[c][r].y = y;
+			grid[c][r].color = color;
+			
+			ctx.beginPath();
+			ctx.rect(x, y, cellWidth, cellHeight);
+			ctx.fillStyle = grid[c][r].color;
+			ctx.fill();
+			ctx.closePath();
+		}
+	}
+}
+
+function speciesOverlay() {			
+     for(c=0; c<cellColumnCount; c++) {
+		for(r=0; r<cellRowCount; r++) {
+			let xOverlay = (c*(cellWidth+cellPadding))+cellOffsetLeft + 1;
+			let yOverlay = (r*(cellHeight+cellPadding))+cellOffsetTop + 1;
+			color = black;
+			grid[c][r].xOverlay = xOverlay;
+			grid[c][r].yOverlay = yOverlay;
+			grid[c][r].colorOverlay = color;
+			
+			ctx.beginPath();
+			ctx.rect(xOverlay, yOverlay, (cellWidth - 2), (cellHeight - 2));
+			ctx.fillStyle = grid[c][r].colorOverlay;
+			ctx.fill();
+			ctx.closePath();
+		}
+	}
+}
+
+function changeCellColor (cell, color) {		
+	cell.color = color;
+	ctx.beginPath();
+	ctx.rect(cell.x, cell.y, cellWidth, cellHeight);
+	ctx.fillStyle = cell.color;
+	ctx.fill();
+	ctx.closePath();
+}
+
+function smallIslandMaker() {
+	centerX = Math.floor(Math.random() * (cellColumnCount));
+	centerY = Math.floor(Math.random() * (cellRowCount-6)+3);
+	grid[centerX][centerY].color = green;
+	
+	point1y = centerY - (Math.floor(Math.random() * 5) + 3);
+		if(point1y < 0) {point1y = 0;}
+	point1x = centerX + ((Math.floor(Math.random() * 2)) * (Math.floor(Math.random()*2) == 1 ? 1 : -1));
+		if(point1x < 0) {point1x = 0;}
+		else if(point1x >= cellColumnCount) {point1x = (cellColumnCount-1);}
+		
+	point3y = centerY + (Math.floor(Math.random() * 5) + 3);
+		if(point3y >= (cellRowCount)) {point3y = cellRowCount-1;}
+	point3x = centerX + ((Math.floor(Math.random() * 2)) * (Math.floor(Math.random()*2) == 1 ? 1 : -1));
+		if(point3x < 0) {point3x = 0;}
+		else if(point3x >= cellColumnCount) {point3x = (cellColumnCount-1);}
+	
+	point2x = centerX + (Math.floor(Math.random() * 5) + 3);
+		if(point2x >= cellColumnCount) {point2x = (((point2x - centerX) + (cellColumnCount - (cellColumnCount - centerX)))) % cellColumnCount;}   
+	point2y = centerY + ((Math.floor(Math.random() * 2)) * (Math.floor(Math.random()*2) == 1 ? 1 : -1));
+		if(point2y < (point1y + 2)) {point2y = (point1y + 2);}
+		else if(point2y > (point3y - 2)) {point2y = (point3y - 2);}
+	
+	point4x = centerX - (Math.floor(Math.random() * 5) + 3);
+		if(point4x < 0) {point4x = ((centerX + (centerX - point4x)) + (cellColumnCount - ((centerX - point4x)*2)));}
+	point4y =centerY + ((Math.floor(Math.random() * 2)) * (Math.floor(Math.random()*2) == 1 ? 1 : -1));
+		if(point4y < (point1y +2)) {point4y = (point1y + 2);}
+		else if(point4y > (point3y - 2)) {point4y = (point3y - 2);}
+		
+	//console.log("CenterX: " + centerX + " CenterY: " + centerY);
+	//console.log("point1x " + point1x + " point3x " + point3x + " point2y " + point2y + " point4y " + point4y);
+	
+	//FINDING MIDPOINTS BETWEEN POINTS 1, 2, 3, 4
+	if (point2x > point1x) {
+		point12x = Math.floor((point1x + point2x)/2);}
+	else if (point2x < point1x) {
+		point12x = Math.floor((((cellColumnCount - Math.abs(point1x - point2x))/2) + (cellColumnCount - (cellColumnCount - point1x))) % cellColumnCount)}
+	difx = (Math.max((Math.min((point12x - point1x), (point2x - point12x))-1), 0))/3;
+	difx *= Math.floor(Math.random()*2) == 1 ? 1.25 : -0.5;
+	point12x += Math.floor(Math.random() * difx);
+	
+	point12y = Math.floor((point2y + point1y)/2);
+	dify = (Math.max((Math.min((point2y - point12y), (point12y - point1y))-1), 0))/3;
+	dify *= Math.floor(Math.random()*2) == 1 ? 1.25 : -0.5;
+	point12y += Math.floor(Math.random() * dify);
+	
+	if (point2x > point3x) {
+		point23x = Math.floor((point3x + point2x)/2);}
+	else if (point2x < point3x) {
+		point23x = Math.floor((((cellColumnCount - Math.abs(point3x - point2x))/2) + (cellColumnCount - (cellColumnCount - point3x))) % cellColumnCount)}
+	difx1 = (Math.max((Math.min((point2x - point23x), (point23x - point3x))-1), 0))/3;
+	difx1 *= (Math.floor(Math.random()*2) == 1 && difx < 0) ? 1.25 : -0.5;
+	point23x += Math.floor(Math.random() * difx1);
+	
+	point23y = Math.floor((point2y + point3y)/2);
+	dify1 = (Math.max((Math.min((point3y - point23y), (point23y - point2y))-1), 0))/3;
+	dify1 *= (Math.floor(Math.random()*2) == 1 && dify < 0) ? 1.25 : -0.5;
+	point23y += Math.floor(Math.random() * dify1);
+	
+	if (point4x < point3x) {
+		point34x = Math.floor((point3x + point4x)/2);}
+	else if (point4x > point3x) {
+		point34x = (Math.floor((point3x + ((cellColumnCount - Math.abs(point3x - point4x))/2)) + (cellColumnCount - ((cellColumnCount - Math.abs(point3x - point4x)))))) % cellColumnCount}
+	
+	difx2 = (Math.max((Math.min((point3x - point34x), (point34x - point4x))-1), 0))/3;
+	difx2 *= (Math.floor(Math.random()*2) == 1 && difx < 0 && difx1 < 0) ? 1.25 : -0.5;
+	point34x += Math.floor(Math.random() * difx2);
+	
+	point34y = Math.floor((point4y + point3y)/2);
+	dify2 = (Math.max((Math.min((point3y - point34y), (point34y - point4y))-1), 0))/3;
+	dify2 *= (Math.floor(Math.random()*2) == 1 && dify < 0 && dify1 < 0) ? 1.25 : -0.5;
+	point34y += Math.floor(Math.random() * dify2);         
+	
+	if (point4x < point1x) {
+		point41x = Math.floor((point1x + point4x)/2);}
+	else if (point4x > point1x) {
+		point41x = (Math.floor((point1x + ((cellColumnCount - Math.abs(point1x - point4x))/2)) + (cellColumnCount - ((cellColumnCount - Math.abs(point1x - point4x)))))) % cellColumnCount}
+	
+	difx3 = (Math.max((Math.min((point1x - point41x), (point41x - point4x))-1), 0))/3;
+	difx3 *= (Math.floor(Math.random()*2) == 1 && difx < 0 && difx1 < 0 && difx2 < 0) ? 1.25 : -0.5;
+	point41x += Math.floor(Math.random() * difx3);
+	
+	point41y = Math.floor((point4y + point1y)/2);
+	dify3 = (Math.max((Math.min((point4y - point41y), (point41y - point1y))-1), 0))/3;
+	dify3 *= (Math.floor(Math.random()*2) == 1 && dify < 0 && dify1 < 0 && dify2) ? 1.25 : -0.5;
+	point41y += Math.floor(Math.random() * dify3);
+	
+	//SLOPES(M) AND INTERSECTIONS(B)
+	//Upper Half
+	if (point4x < point1x || point4x < point41x) {
+		m = (point4y - point41y)/(point4x - point41x);
+		b = point41y - (m * point41x);
+		if (point4x < point41x && point4x > point1x) {
+			m0 = (point1y - point41y)/(cellColumnCount - Math.abs(point41x - point1x));
+			b0 = (point1y + 2) - (m0 * point1x);}
+	}
+	else if (point4x > point1x) {
+		mZ = (point41y - point4y)/(cellColumnCount - Math.abs(point4x - point41x))
+		bZ = point4y - (mZ * point4x);
+		bZ1 = point41y - (mZ * point41x); 
+	}
+	
+	if (point41x < point1x) {
+		m1 = (point41y - point1y)/(point41x - point1x);
+		b1 = point1y - (m1 * point1x);}
+	else if (point41x > point1x) {
+		m1 = (point1y - point41y)/(cellColumnCount - Math.abs(point41x - point1x));
+		b1 = point41y - (m1 * point41x);}
+	
+	if (point12x > point1x) {
+		m2 = (point1y - point12y)/(point1x - point12x);
+		b2 = point12y - (m2 * point12x);}
+	else if (point12x < point1x) {
+		m2 = (point12y - point1y)/(cellColumnCount - Math.abs(point1x - point12x));
+		b2 = point12y - (m2 * point12x);}
+	
+	if (point2x > point1x || point2x > point12x) {
+		m3 = (point12y - point2y)/(point12x - point2x);
+		b3 = point2y - (m3 * point2x);
+		if (point2x > point12x && point2x < point1x) {
+			m30 = (point12y - point1y)/(cellColumnCount - Math.abs(point12x - point1x));
+			b30 = (point1y + 2) - (m30 * point1x);}
+	}
+	else if (point2x < point1x) {
+		m3Z = (point2y - point12y)/(cellColumnCount - Math.abs(point2x - point12x));
+		b3Z = point2y - (m3Z * point2x);
+		b3Z1 = point12y - (m3Z * point12x);
+	}
+	
+	//Lower Half
+	if (point4x < point3x || point4x < point34x) {
+		m4 = (point4y - point34y)/(point4x - point34x);
+		b4 = point34y - (m4 * point34x);
+		if (point4x < point34x && point4x > point3x) {
+			m40 = (point3y - point34y)/(cellColumnCount - Math.abs(point3x - point34x));
+			b40 = (point3y - 2) - (m40 * point3x);
+		}
+	}
+	else if (point4x > point3x) {
+		m4Z = (point34y - point4y)/(cellColumnCount - Math.abs(point4x - point34x));
+		b4Z = point4y - (m4Z * point4x);
+		b4Z1 = point34y - (m4Z * point34x);
+		}
+	
+	if (point34x < point3x) {
+		m5 = (point34y - point3y)/(point34x - point3x);
+		b5 = point3y - (m5 * point3x);}
+	else if (point34x > point3x) {
+		m5 = (point3y - point34y)/(cellColumnCount - Math.abs(point34x - point3x));
+		b5 = point34y - (m5 * point34x);}
+	
+	if (point23x > point3x) {
+		m6 = (point3y - point23y)/(point3x - point23x);
+		b6 = point23y - (m6 * point23x);}
+	else if (point23x < point3x) {
+		m6 = (point23y - point3y)/(cellColumnCount - Math.abs(point23x - point3x));
+		b6 = point23y - (m6 * point23x);}
+	
+	if (point2x > point3x || point2x > point23x) {
+		m7 = (point23y - point2y)/(point23x - point2x);
+		b7 = point2y - (m7 * point2x);
+		if (point2x > point23x && point2x < point3x) {
+			m70 = (point23y - point3y)/(cellColumnCount - Math.abs(point23x - point3x));
+			b70 = (point3y - 2) - (m70 * point3x);
+		}
+	}
+	else if (point2x < point3x) {
+		m7Z = (point2y - point23y)/(cellColumnCount - Math.abs(point2x - point23x));
+		b7Z = point2y - (m7Z * point2x);
+		b7Z1 = point23y - (m7Z * point23x);
+	}
+	
+	for(c=0; c<cellColumnCount; c++) {
+		for(r=0; r<cellRowCount; r++) {
+		//Upper Half
+			if (point4x < point1x || point4x < point41x) { 
+				if (c > (point4x + 1) && c <= point41x && r <= point4y && r > (m*c)+b && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {    
+					grid[c][r].color = green;
+				}
+				else if (point4x < point41x && point4x > point1x && c <= point1x && c >= 0 && r <= point4y && r > (m0*c)+b0 && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+			else if (point4x > point1x) {
+				if (c > (point4x + 1) && c < cellColumnCount && r <= point4y && r > (mZ*c)+bZ  && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+				else if (c <= point41x && c >= 0 && r <= point4y && r > (mZ*c)+bZ1 && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+			
+			if (point41x < point1x) {   
+				if (c >= point41x && c <= point1x && r <= Math.max(point4y, point2y) && r > (m1*c) + b1 && r > (point1y + 1) && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+			else if (point41x > point1x) {
+				if (c >= point41x && c < cellColumnCount && r <= point4y && r > (m1*c)+ b1 && r > (point1y + 1) && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+			
+			if (point12x > point1x) {  
+				if (c >= point1x && c <= point12x && r <= Math.max(point2y, point4y) && r > (m2*c) + b2 && r > (point1y + 1) && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+			else if (point12x < point1x) {
+				if (c <= point12x && c >= 0 && r <= point2y && r > (m2*c) + b2 && r > (point1y + 1) && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+			
+			if (point2x > point1x || point2x > point12x) {     
+				if (c >= point12x && c < (point2x - 1) && r <= point2y && r > (m3*c) + b3 && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {    
+					grid[c][r].color = green;
+				}
+				else if (point2x > point12x && point2x < point1x && c >= point1x && c < cellColumnCount && r <= point2y && r > (m30*c) + b30 && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+			else if (point2x < point1x) {
+				if (c < (point2x + 1) && c >= 0 && r <= point2y && r > (m3Z*c) + b3Z && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+				else if (c >= point12x && c < cellColumnCount && r <= point2y && r > (m3Z*c)+b3Z1 && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+		//Lower Half
+			if (point4x < point3x || point4x < point34x) {   
+				if (c > (point4x + 1) && c <= point34x && r >= point4y && r < (m4*c) + b4 && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {    
+					grid[c][r].color = green;
+				}
+				else if (point4x < point34x && point4x > point3x && c <= point3x && c >= 0 && r >= point4y && r < (m40*c)+b40 && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+			else if (point4x > point3x) {  
+				if (c > (point4x + 1) && c < cellColumnCount && r >= point4y && r < (m4Z*c)+b4Z && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+				else if (c <= point34x && c >= 0 && r >= point4y && r < (m4Z*c)+b4Z1 && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+			
+			if (point34x < point3x) {             
+				if (c >= point34x && c <= point3x && r >= Math.min(point4y, point2y) && r < (m5*c) + b5 && r < (point3y - 1) && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+			else if (point34x > point3x) {
+				if (c >= point34x && c < cellColumnCount && r >= point4y && r < (m5*c)+ b5 && r > (point1y + 1) && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+			
+			
+			if (point23x > point3x) {    
+				if (c >= point3x && c <= point23x && r >= Math.min(point2y, point4y) && r < (m6*c) + b6 && r < (point3y - 1) && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+			else if (point23x < point3x) {
+				if (c <= point23x && c >= 0 && r >= point2y && r < (m6*c) + b6 && r > (point1y + 1) && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+			
+			if (point2x > point3x || point2x > point23x) {   
+				if (c >= point23x && c < (point2x - 1) && r >= point2y && r < (m7*c) + b7 && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+				else if (point2x > point23x && point2x < point3x && c >= point3x && c < cellColumnCount && r >= point2y && r < (m70*c)+b70 && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+			else if (point2x < point3x) {
+				if (c < (point2x + 1) && c >= 0 && r >= point2y && r < (m7Z*c)+b7Z && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+				else if (c >= point23x && c < cellColumnCount && r >= point2y && r < (m7Z*c)+b7Z1 && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+			
+		}
+	}
+}
+
+function mediumIslandMaker() {
+	centerX = Math.floor(Math.random() * (cellColumnCount));
+	centerY = Math.floor(Math.random() * (cellRowCount-8)+4);
+	grid[centerX][centerY].color = green;
+	
+	point1y = centerY - (Math.floor(Math.random() * 5) + 10);
+		if(point1y < 0) {point1y = 0;}
+	point1x = centerX + ((Math.floor(Math.random() * 5)) * (Math.floor(Math.random()*2) == 1 ? 1 : -1));
+		if(point1x < 0) {point1x = 0;}
+		else if(point1x >= cellColumnCount) {point1x = (cellColumnCount-1);}
+		
+	point3y = centerY + (Math.floor(Math.random() * 5) + 10);
+		if(point3y >= (cellRowCount)) {point3y = cellRowCount-1;}
+	point3x = centerX + ((Math.floor(Math.random() * 5)) * (Math.floor(Math.random()*2) == 1 ? 1 : -1));
+		if(point3x < 0) {point3x = 0;}
+		else if(point3x >= cellColumnCount) {point3x = (cellColumnCount-1);}
+	
+	point2x = centerX + (Math.floor(Math.random() * 5) + 10);
+		if(point2x >= cellColumnCount) {point2x = (((point2x - centerX) + (cellColumnCount - (cellColumnCount - centerX)))) % cellColumnCount;}   
+	point2y = centerY + ((Math.floor(Math.random() * 5)) * (Math.floor(Math.random()*2) == 1 ? 1 : -1));
+		if(point2y < (point1y + 4)) {point2y = (point1y + 4);}
+		else if(point2y > (point3y - 4)) {point2y = (point3y - 4);}
+	
+	point4x = centerX - (Math.floor(Math.random() * 5) + 10);
+		if(point4x < 0) {point4x = ((centerX + (centerX - point4x)) + (cellColumnCount - ((centerX - point4x)*2)));}
+	point4y =centerY + ((Math.floor(Math.random() * 5)) * (Math.floor(Math.random()*2) == 1 ? 1 : -1));
+		if(point4y < (point1y +4)) {point4y = (point1y + 4);}
+		else if(point4y > (point3y - 4)) {point4y = (point3y - 4);}
+		
+	//console.log("CenterX: " + centerX + " CenterY: " + centerY);
+	//console.log("point1x " + point1x + " point3x " + point3x + " point2y " + point2y + " point4y " + point4y);
+	
+	//FINDING MIDPOINTS BETWEEN POINTS 1, 2, 3, 4
+	if (point2x > point1x) {
+		point12x = Math.floor((point1x + point2x)/2);}
+	else if (point2x < point1x) {
+		point12x = Math.floor((((cellColumnCount - Math.abs(point1x - point2x))/2) + (cellColumnCount - (cellColumnCount - point1x))) % cellColumnCount)}
+	difx = (Math.max((Math.min((point12x - point1x), (point2x - point12x))-1), 0))/3;
+	difx *= Math.floor(Math.random()*2) == 1 ? 1.25 : -0.5;
+	point12x += Math.floor(Math.random() * difx);
+	
+	point12y = Math.floor((point2y + point1y)/2);
+	dify = (Math.max((Math.min((point2y - point12y), (point12y - point1y))-1), 0))/3;
+	dify *= Math.floor(Math.random()*2) == 1 ? 1.25 : -0.5;
+	point12y += Math.floor(Math.random() * dify);
+	
+	if (point2x > point3x) {
+		point23x = Math.floor((point3x + point2x)/2);}
+	else if (point2x < point3x) {
+		point23x = Math.floor((((cellColumnCount - Math.abs(point3x - point2x))/2) + (cellColumnCount - (cellColumnCount - point3x))) % cellColumnCount)}
+	difx1 = (Math.max((Math.min((point2x - point23x), (point23x - point3x))-1), 0))/3;
+	difx1 *= (Math.floor(Math.random()*2) == 1 && difx < 0) ? 1.25 : -0.5;
+	point23x += Math.floor(Math.random() * difx1);
+	
+	point23y = Math.floor((point2y + point3y)/2);
+	dify1 = (Math.max((Math.min((point3y - point23y), (point23y - point2y))-1), 0))/3;
+	dify1 *= (Math.floor(Math.random()*2) == 1 && dify < 0) ? 1.25 : -0.5;
+	point23y += Math.floor(Math.random() * dify1);
+	
+	if (point4x < point3x) {
+		point34x = Math.floor((point3x + point4x)/2);}
+	else if (point4x > point3x) {
+		point34x = (Math.floor((point3x + ((cellColumnCount - Math.abs(point3x - point4x))/2)) + (cellColumnCount - ((cellColumnCount - Math.abs(point3x - point4x)))))) % cellColumnCount}
+	
+	difx2 = (Math.max((Math.min((point3x - point34x), (point34x - point4x))-1), 0))/3;
+	difx2 *= (Math.floor(Math.random()*2) == 1 && difx < 0 && difx1 < 0) ? 1.25 : -0.5;
+	point34x += Math.floor(Math.random() * difx2);
+	
+	point34y = Math.floor((point4y + point3y)/2);
+	dify2 = (Math.max((Math.min((point3y - point34y), (point34y - point4y))-1), 0))/3;
+	dify2 *= (Math.floor(Math.random()*2) == 1 && dify < 0 && dify1 < 0) ? 1.25 : -0.5;
+	point34y += Math.floor(Math.random() * dify2);         
+	
+	if (point4x < point1x) {
+		point41x = Math.floor((point1x + point4x)/2);}
+	else if (point4x > point1x) {
+		point41x = (Math.floor((point1x + ((cellColumnCount - Math.abs(point1x - point4x))/2)) + (cellColumnCount - ((cellColumnCount - Math.abs(point1x - point4x)))))) % cellColumnCount}
+	
+	difx3 = (Math.max((Math.min((point1x - point41x), (point41x - point4x))-1), 0))/3;
+	difx3 *= (Math.floor(Math.random()*2) == 1 && difx < 0 && difx1 < 0 && difx2 < 0) ? 1.25 : -0.5;
+	point41x += Math.floor(Math.random() * difx3);
+	
+	point41y = Math.floor((point4y + point1y)/2);
+	dify3 = (Math.max((Math.min((point4y - point41y), (point41y - point1y))-1), 0))/3;
+	dify3 *= (Math.floor(Math.random()*2) == 1 && dify < 0 && dify1 < 0 && dify2) ? 1.25 : -0.5;
+	point41y += Math.floor(Math.random() * dify3);
+	
+	//SLOPES(M) AND INTERSECTIONS(B)
+	//Upper Half
+	if (point4x < point1x || point4x < point41x) {
+		m = (point4y - point41y)/(point4x - point41x);
+		b = point41y - (m * point41x);
+		if (point4x < point41x && point4x > point1x) {
+			m0 = (point1y - point41y)/(cellColumnCount - Math.abs(point41x - point1x));
+			b0 = (point1y + 2) - (m0 * point1x);}
+	}
+	else if (point4x > point1x) {
+		mZ = (point41y - point4y)/(cellColumnCount - Math.abs(point4x - point41x))
+		bZ = point4y - (mZ * point4x);
+		bZ1 = point41y - (mZ * point41x); 
+	}
+	
+	if (point41x < point1x) {
+		m1 = (point41y - point1y)/(point41x - point1x);
+		b1 = point1y - (m1 * point1x);}
+	else if (point41x > point1x) {
+		m1 = (point1y - point41y)/(cellColumnCount - Math.abs(point41x - point1x));
+		b1 = point41y - (m1 * point41x);}
+	
+	if (point12x > point1x) {
+		m2 = (point1y - point12y)/(point1x - point12x);
+		b2 = point12y - (m2 * point12x);}
+	else if (point12x < point1x) {
+		m2 = (point12y - point1y)/(cellColumnCount - Math.abs(point1x - point12x));
+		b2 = point12y - (m2 * point12x);}
+	
+	if (point2x > point1x || point2x > point12x) {
+		m3 = (point12y - point2y)/(point12x - point2x);
+		b3 = point2y - (m3 * point2x);
+		if (point2x > point12x && point2x < point1x) {
+			m30 = (point12y - point1y)/(cellColumnCount - Math.abs(point12x - point1x));
+			b30 = (point1y + 2) - (m30 * point1x);}
+	}
+	else if (point2x < point1x) {
+		m3Z = (point2y - point12y)/(cellColumnCount - Math.abs(point2x - point12x));
+		b3Z = point2y - (m3Z * point2x);
+		b3Z1 = point12y - (m3Z * point12x);
+	}
+	
+	//Lower Half
+	if (point4x < point3x || point4x < point34x) {
+		m4 = (point4y - point34y)/(point4x - point34x);
+		b4 = point34y - (m4 * point34x);
+		if (point4x < point34x && point4x > point3x) {
+			m40 = (point3y - point34y)/(cellColumnCount - Math.abs(point3x - point34x));
+			b40 = (point3y - 2) - (m40 * point3x);
+		}
+	}
+	else if (point4x > point3x) {
+		m4Z = (point34y - point4y)/(cellColumnCount - Math.abs(point4x - point34x));
+		b4Z = point4y - (m4Z * point4x);
+		b4Z1 = point34y - (m4Z * point34x);
+		}
+	
+	if (point34x < point3x) {
+		m5 = (point34y - point3y)/(point34x - point3x);
+		b5 = point3y - (m5 * point3x);}
+	else if (point34x > point3x) {
+		m5 = (point3y - point34y)/(cellColumnCount - Math.abs(point34x - point3x));
+		b5 = point34y - (m5 * point34x);}
+	
+	if (point23x > point3x) {
+		m6 = (point3y - point23y)/(point3x - point23x);
+		b6 = point23y - (m6 * point23x);}
+	else if (point23x < point3x) {
+		m6 = (point23y - point3y)/(cellColumnCount - Math.abs(point23x - point3x));
+		b6 = point23y - (m6 * point23x);}
+	
+	if (point2x > point3x || point2x > point23x) {
+		m7 = (point23y - point2y)/(point23x - point2x);
+		b7 = point2y - (m7 * point2x);
+		if (point2x > point23x && point2x < point3x) {
+			m70 = (point23y - point3y)/(cellColumnCount - Math.abs(point23x - point3x));
+			b70 = (point3y - 2) - (m70 * point3x);
+		}
+	}
+	else if (point2x < point3x) {
+		m7Z = (point2y - point23y)/(cellColumnCount - Math.abs(point2x - point23x));
+		b7Z = point2y - (m7Z * point2x);
+		b7Z1 = point23y - (m7Z * point23x);
+	}
+	
+	for(c=0; c<cellColumnCount; c++) {
+		for(r=0; r<cellRowCount; r++) {
+		//Upper Half
+			if (point4x < point1x || point4x < point41x) { 
+				if (c > (point4x + 1) && c <= point41x && r <= point4y && r > (m*c)+b && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {    
+					grid[c][r].color = green;
+				}
+				else if (point4x < point41x && point4x > point1x && c <= point1x && c >= 0 && r <= point4y && r > (m0*c)+b0 && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+			else if (point4x > point1x) {
+				if (c > (point4x + 1) && c < cellColumnCount && r <= point4y && r > (mZ*c)+bZ  && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+				else if (c <= point41x && c >= 0 && r <= point4y && r > (mZ*c)+bZ1 && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+			
+			if (point41x < point1x) {   
+				if (c >= point41x && c <= point1x && r <= Math.max(point4y, point2y) && r > (m1*c) + b1 && r > (point1y + 1) && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+			else if (point41x > point1x) {
+				if (c >= point41x && c < cellColumnCount && r <= point4y && r > (m1*c)+ b1 && r > (point1y + 1) && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+			
+			if (point12x > point1x) {  
+				if (c >= point1x && c <= point12x && r <= Math.max(point2y, point4y) && r > (m2*c) + b2 && r > (point1y + 1) && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+			else if (point12x < point1x) {
+				if (c <= point12x && c >= 0 && r <= point2y && r > (m2*c) + b2 && r > (point1y + 1) && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+			
+			if (point2x > point1x || point2x > point12x) {     
+				if (c >= point12x && c < (point2x - 1) && r <= point2y && r > (m3*c) + b3 && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {    
+					grid[c][r].color = green;
+				}
+				else if (point2x > point12x && point2x < point1x && c >= point1x && c < cellColumnCount && r <= point2y && r > (m30*c) + b30 && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+			else if (point2x < point1x) {
+				if (c < (point2x + 1) && c >= 0 && r <= point2y && r > (m3Z*c) + b3Z && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+				else if (c >= point12x && c < cellColumnCount && r <= point2y && r > (m3Z*c)+b3Z1 && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+		//Lower Half
+			if (point4x < point3x || point4x < point34x) {   
+				if (c > (point4x + 1) && c <= point34x && r >= point4y && r < (m4*c) + b4 && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {    
+					grid[c][r].color = green;
+				}
+				else if (point4x < point34x && point4x > point3x && c <= point3x && c >= 0 && r >= point4y && r < (m40*c)+b40 && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+			else if (point4x > point3x) {  
+				if (c > (point4x + 1) && c < cellColumnCount && r >= point4y && r < (m4Z*c)+b4Z && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+				else if (c <= point34x && c >= 0 && r >= point4y && r < (m4Z*c)+b4Z1 && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+			
+			if (point34x < point3x) {             
+				if (c >= point34x && c <= point3x && r >= Math.min(point4y, point2y) && r < (m5*c) + b5 && r < (point3y - 1) && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+			else if (point34x > point3x) {
+				if (c >= point34x && c < cellColumnCount && r >= point4y && r < (m5*c)+ b5 && r > (point1y + 1) && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+			
+			
+			if (point23x > point3x) {    
+				if (c >= point3x && c <= point23x && r >= Math.min(point2y, point4y) && r < (m6*c) + b6 && r < (point3y - 1) && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+			else if (point23x < point3x) {
+				if (c <= point23x && c >= 0 && r >= point2y && r < (m6*c) + b6 && r > (point1y + 1) && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+			
+			if (point2x > point3x || point2x > point23x) {   
+				if (c >= point23x && c < (point2x - 1) && r >= point2y && r < (m7*c) + b7 && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+				else if (point2x > point23x && point2x < point3x && c >= point3x && c < cellColumnCount && r >= point2y && r < (m70*c)+b70 && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+			else if (point2x < point3x) {
+				if (c < (point2x + 1) && c >= 0 && r >= point2y && r < (m7Z*c)+b7Z && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+				else if (c >= point23x && c < cellColumnCount && r >= point2y && r < (m7Z*c)+b7Z1 && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+		}
+	}
+}
+
+function bigIslandMaker() {
+	centerX = Math.floor(Math.random() * (cellColumnCount));
+	centerY = Math.floor(Math.random() * (cellRowCount-20)+10);
+	cloneCenterX = JSON.parse(JSON.stringify(centerX));
+	cloneCenterY = JSON.parse(JSON.stringify(centerY));
+	grid[centerX][centerY].color = green;
+	
+	
+	point1y = centerY - (Math.floor(Math.random() * 20) + 20);
+		if(point1y < 0) {point1y = 0;}
+	point1x = centerX + ((Math.floor(Math.random() * 10)) * (Math.floor(Math.random()*2) == 1 ? 1 : -1));
+		if(point1x < 0) {point1x = 0;}
+		else if(point1x >= cellColumnCount) {point1x = (cellColumnCount-1);}
+		
+	point3y = centerY + (Math.floor(Math.random() * 20) + 20);
+		if(point3y >= (cellRowCount)) {point3y = cellRowCount-1;}
+	point3x = centerX + ((Math.floor(Math.random() * 10)) * (Math.floor(Math.random()*2) == 1 ? 1 : -1));
+		if(point3x < 0) {point3x = 0;}
+		else if(point3x >= cellColumnCount) {point3x = (cellColumnCount-1);}
+	
+	point2x = centerX + (Math.floor(Math.random() * 20) + 20);
+		if(point2x >= cellColumnCount) {point2x = (((point2x - centerX) + (cellColumnCount - (cellColumnCount - centerX)))) % cellColumnCount;}   
+	point2y = centerY + ((Math.floor(Math.random() * 10)) * (Math.floor(Math.random()*2) == 1 ? 1 : -1));
+		if(point2y < (point1y + 5)) {point2y = (point1y + 5);}
+		else if(point2y > (point3y - 5)) {point2y = (point3y - 5);}
+	
+	point4x = centerX - (Math.floor(Math.random() * 20) + 20);
+		if(point4x < 0) {point4x = ((centerX + (centerX - point4x)) + (cellColumnCount - ((centerX - point4x)*2)));}
+	point4y =centerY + ((Math.floor(Math.random() * 10)) * (Math.floor(Math.random()*2) == 1 ? 1 : -1));
+		if(point4y < (point1y +5)) {point4y = (point1y + 5);}
+		else if(point4y > (point3y - 5)) {point4y = (point3y - 5);}
+		
+	//console.log("CenterX: " + centerX + " CenterY: " + centerY);
+	//console.log("clonex " + cloneCenterX + " cloney " + cloneCenterY);
+	//console.log("point1x " + point1x + " point3x " + point3x + " point2y " + point2y + " point4y " + point4y);
+	
+	//FINDING MIDPOINTS BETWEEN POINTS 1, 2, 3, 4
+	if (point2x > point1x) {
+		point12x = Math.floor((point1x + point2x)/2);}
+	else if (point2x < point1x) {
+		point12x = Math.floor((((cellColumnCount - Math.abs(point1x - point2x))/2) + (cellColumnCount - (cellColumnCount - point1x))) % cellColumnCount)}
+	difx = (Math.max((Math.min((point12x - point1x), (point2x - point12x))-1), 0))/3;
+	difx *= Math.floor(Math.random()*2) == 1 ? 1.25 : -0.5;
+	point12x += Math.floor(Math.random() * difx);
+	
+	point12y = Math.floor((point2y + point1y)/2);
+	dify = (Math.max((Math.min((point2y - point12y), (point12y - point1y))-1), 0))/3;
+	dify *= Math.floor(Math.random()*2) == 1 ? 1.25 : -0.5;
+	point12y += Math.floor(Math.random() * dify);
+	
+	if (point2x > point3x) {
+		point23x = Math.floor((point3x + point2x)/2);}
+	else if (point2x < point3x) {
+		point23x = Math.floor((((cellColumnCount - Math.abs(point3x - point2x))/2) + (cellColumnCount - (cellColumnCount - point3x))) % cellColumnCount)}
+	difx1 = (Math.max((Math.min((point2x - point23x), (point23x - point3x))-1), 0))/3;
+	difx1 *= (Math.floor(Math.random()*2) == 1 && difx < 0) ? 1.25 : -0.5;
+	point23x += Math.floor(Math.random() * difx1);
+	
+	point23y = Math.floor((point2y + point3y)/2);
+	dify1 = (Math.max((Math.min((point3y - point23y), (point23y - point2y))-1), 0))/3;
+	dify1 *= (Math.floor(Math.random()*2) == 1 && dify < 0) ? 1.25 : -0.5;
+	point23y += Math.floor(Math.random() * dify1);
+	
+	if (point4x < point3x) {
+		point34x = Math.floor((point3x + point4x)/2);}
+	else if (point4x > point3x) {
+		point34x = (Math.floor((point3x + ((cellColumnCount - Math.abs(point3x - point4x))/2)) + (cellColumnCount - ((cellColumnCount - Math.abs(point3x - point4x)))))) % cellColumnCount}
+	
+	difx2 = (Math.max((Math.min((point3x - point34x), (point34x - point4x))-1), 0))/3;
+	difx2 *= (Math.floor(Math.random()*2) == 1 && difx < 0 && difx1 < 0) ? 1.25 : -0.5;
+	point34x += Math.floor(Math.random() * difx2);
+	
+	point34y = Math.floor((point4y + point3y)/2);
+	dify2 = (Math.max((Math.min((point3y - point34y), (point34y - point4y))-1), 0))/3;
+	dify2 *= (Math.floor(Math.random()*2) == 1 && dify < 0 && dify1 < 0) ? 1.25 : -0.5;
+	point34y += Math.floor(Math.random() * dify2);         
+	
+	if (point4x < point1x) {
+		point41x = Math.floor((point1x + point4x)/2);}
+	else if (point4x > point1x) {
+		point41x = (Math.floor((point1x + ((cellColumnCount - Math.abs(point1x - point4x))/2)) + (cellColumnCount - ((cellColumnCount - Math.abs(point1x - point4x)))))) % cellColumnCount}
+	
+	difx3 = (Math.max((Math.min((point1x - point41x), (point41x - point4x))-1), 0))/3;
+	difx3 *= (Math.floor(Math.random()*2) == 1 && difx < 0 && difx1 < 0 && difx2 < 0) ? 1.25 : -0.5;
+	point41x += Math.floor(Math.random() * difx3);
+	
+	point41y = Math.floor((point4y + point1y)/2);
+	dify3 = (Math.max((Math.min((point4y - point41y), (point41y - point1y))-1), 0))/3;
+	dify3 *= (Math.floor(Math.random()*2) == 1 && dify < 0 && dify1 < 0 && dify2) ? 1.25 : -0.5;
+	point41y += Math.floor(Math.random() * dify3);
+	
+	//SLOPES(M) AND INTERSECTIONS(B)
+	//Upper Half
+	if (point4x < point1x || point4x < point41x) {
+		m = (point4y - point41y)/(point4x - point41x);
+		b = point41y - (m * point41x);
+		if (point4x < point41x && point4x > point1x) {
+			m0 = (point1y - point41y)/(cellColumnCount - Math.abs(point41x - point1x));
+			b0 = (point1y + 2) - (m0 * point1x);}
+	}
+	else if (point4x > point1x) {
+		mZ = (point41y - point4y)/(cellColumnCount - Math.abs(point4x - point41x))
+		bZ = point4y - (mZ * point4x);
+		bZ1 = point41y - (mZ * point41x); 
+	}
+	
+	if (point41x < point1x) {
+		m1 = (point41y - point1y)/(point41x - point1x);
+		b1 = point1y - (m1 * point1x);}
+	else if (point41x > point1x) {
+		m1 = (point1y - point41y)/(cellColumnCount - Math.abs(point41x - point1x));
+		b1 = point41y - (m1 * point41x);}
+	
+	if (point12x > point1x) {
+		m2 = (point1y - point12y)/(point1x - point12x);
+		b2 = point12y - (m2 * point12x);}
+	else if (point12x < point1x) {
+		m2 = (point12y - point1y)/(cellColumnCount - Math.abs(point1x - point12x));
+		b2 = point12y - (m2 * point12x);}
+	
+	if (point2x > point1x || point2x > point12x) {
+		m3 = (point12y - point2y)/(point12x - point2x);
+		b3 = point2y - (m3 * point2x);
+		if (point2x > point12x && point2x < point1x) {
+			m30 = (point12y - point1y)/(cellColumnCount - Math.abs(point12x - point1x));
+			b30 = (point1y + 2) - (m30 * point1x);}
+	}
+	else if (point2x < point1x) {
+		m3Z = (point2y - point12y)/(cellColumnCount - Math.abs(point2x - point12x));
+		b3Z = point2y - (m3Z * point2x);
+		b3Z1 = point12y - (m3Z * point12x);
+	}
+	
+	//Lower Half
+	if (point4x < point3x || point4x < point34x) {
+		m4 = (point4y - point34y)/(point4x - point34x);
+		b4 = point34y - (m4 * point34x);
+		if (point4x < point34x && point4x > point3x) {
+			m40 = (point3y - point34y)/(cellColumnCount - Math.abs(point3x - point34x));
+			b40 = (point3y - 2) - (m40 * point3x);
+		}
+	}
+	else if (point4x > point3x) {
+		m4Z = (point34y - point4y)/(cellColumnCount - Math.abs(point4x - point34x));
+		b4Z = point4y - (m4Z * point4x);
+		b4Z1 = point34y - (m4Z * point34x);
+		}
+	
+	if (point34x < point3x) {
+		m5 = (point34y - point3y)/(point34x - point3x);
+		b5 = point3y - (m5 * point3x);}
+	else if (point34x > point3x) {
+		m5 = (point3y - point34y)/(cellColumnCount - Math.abs(point34x - point3x));
+		b5 = point34y - (m5 * point34x);}
+	
+	if (point23x > point3x) {
+		m6 = (point3y - point23y)/(point3x - point23x);
+		b6 = point23y - (m6 * point23x);}
+	else if (point23x < point3x) {
+		m6 = (point23y - point3y)/(cellColumnCount - Math.abs(point23x - point3x));
+		b6 = point23y - (m6 * point23x);}
+	
+	if (point2x > point3x || point2x > point23x) {
+		m7 = (point23y - point2y)/(point23x - point2x);
+		b7 = point2y - (m7 * point2x);
+		if (point2x > point23x && point2x < point3x) {
+			m70 = (point23y - point3y)/(cellColumnCount - Math.abs(point23x - point3x));
+			b70 = (point3y - 2) - (m70 * point3x);
+		}
+	}
+	else if (point2x < point3x) {
+		m7Z = (point2y - point23y)/(cellColumnCount - Math.abs(point2x - point23x));
+		b7Z = point2y - (m7Z * point2x);
+		b7Z1 = point23y - (m7Z * point23x);
+	}
+	
+	for(c=0; c<cellColumnCount; c++) {
+		for(r=0; r<cellRowCount; r++) {
+		//Upper Half
+			if (point4x < point1x || point4x < point41x) { 
+				if (c > (point4x + 2) && c <= point41x && r <= point4y && r > (m*c)+b && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {    
+					grid[c][r].color = green;
+				}
+				else if (point4x < point41x && point4x > point1x && c <= point1x && c >= 0 && r <= point4y && r > (m0*c)+b0 && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+			else if (point4x > point1x) {
+				if (c > (point4x + 2) && c < cellColumnCount && r <= point4y && r > (mZ*c)+bZ  && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+				else if (c <= point41x && c >= 0 && r <= point4y && r > (mZ*c)+bZ1 && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+			
+			if (point41x < point1x) {   
+				if (c >= point41x && c <= point1x && r <= Math.max(point4y, point2y) && r > (m1*c) + b1 && r > (point1y + 2) && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+			else if (point41x > point1x) {
+				if (c >= point41x && c < cellColumnCount && r <= point4y && r > (m1*c)+ b1 && r > (point1y + 2) && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+			
+			if (point12x > point1x) {  
+				if (c >= point1x && c <= point12x && r <= Math.max(point2y, point4y) && r > (m2*c) + b2 && r > (point1y + 2) && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+			else if (point12x < point1x) {
+				if (c <= point12x && c >= 0 && r <= point2y && r > (m2*c) + b2 && r > (point1y + 2) && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+			
+			if (point2x > point1x || point2x > point12x) {     
+				if (c >= point12x && c < (point2x - 2) && r <= point2y && r > (m3*c) + b3 && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {    
+					grid[c][r].color = green;
+				}
+				else if (point2x > point12x && point2x < point1x && c >= point1x && c < cellColumnCount && r <= point2y && r > (m30*c) + b30 && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+			else if (point2x < point1x) {
+				if (c < (point2x + 2) && c >= 0 && r <= point2y && r > (m3Z*c) + b3Z && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+				else if (c >= point12x && c < cellColumnCount && r <= point2y && r > (m3Z*c)+b3Z1 && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+		//Lower Half
+			if (point4x < point3x || point4x < point34x) {   
+				if (c > (point4x + 2) && c <= point34x && r >= point4y && r < (m4*c) + b4 && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {    
+					grid[c][r].color = green;
+				}
+				else if (point4x < point34x && point4x > point3x && c <= point3x && c >= 0 && r >= point4y && r < (m40*c)+b40 && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+			else if (point4x > point3x) {  
+				if (c > (point4x + 2) && c < cellColumnCount && r >= point4y && r < (m4Z*c)+b4Z && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+				else if (c <= point34x && c >= 0 && r >= point4y && r < (m4Z*c)+b4Z1 && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+			
+			if (point34x < point3x) {             
+				if (c >= point34x && c <= point3x && r >= Math.min(point4y, point2y) && r < (m5*c) + b5 && r < (point3y - 2) && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+			else if (point34x > point3x) {
+				if (c >= point34x && c < cellColumnCount && r >= point4y && r < (m5*c)+ b5 && r > (point1y + 2) && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+			
+			
+			if (point23x > point3x) {    
+				if (c >= point3x && c <= point23x && r >= Math.min(point2y, point4y) && r < (m6*c) + b6 && r < (point3y - 2) && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+			else if (point23x < point3x) {
+				if (c <= point23x && c >= 0 && r >= point2y && r < (m6*c) + b6 && r > (point1y + 2) && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+			
+			if (point2x > point3x || point2x > point23x) {   
+				if (c >= point23x && c < (point2x - 2) && r >= point2y && r < (m7*c) + b7 && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+				else if (point2x > point23x && point2x < point3x && c >= point3x && c < cellColumnCount && r >= point2y && r < (m70*c)+b70 && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+			else if (point2x < point3x) {
+				if (c < (point2x + 2) && c >= 0 && r >= point2y && r < (m7Z*c)+b7Z && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+				else if (c >= point23x && c < cellColumnCount && r >= point2y && r < (m7Z*c)+b7Z1 && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && grid[c][r].color !== white) {
+					grid[c][r].color = green;
+				}
+			}
+			
+		}
+	}
+}
+
+function drawMap() {
+	for(c=0; c<cellColumnCount; c++) {
+		for(r=0; r<cellRowCount; r++) {
+		ctx.beginPath();
+		ctx.rect(grid[c][r].x, grid[c][r].y, cellWidth, cellHeight);
+		ctx.fillStyle =  grid[c][r].color;
+		ctx.fill();
+		ctx.closePath();
+		}
+	}
+}
+
+function drawPrecipMap() {
+	for(c=0; c<cellColumnCount; c++) {
+		for(r=0; r<cellRowCount; r++) {
+		ctx.beginPath();
+		ctx.rect(grid[c][r].x, grid[c][r].y, cellWidth, cellHeight);
+		if (grid[c][r].water >= .666) {
+				ctx.fillStyle = 'rgb(0, 255, ' +  Math.round(255 * (grid[c][r].water - .666) * 3) + ')';
+			}
+			else if (grid[c][r].water >= .333 && grid[c][r].water < .666) {
+				ctx.fillStyle = 'rgb(' + Math.round(255 * ((.67 - grid[c][r].water)/.333)) + ', 255, 0)';
+			}
+			if (grid[c][r].water < .333) {
+				ctx.fillStyle = 'rgb(255, ' + Math.round(255 * (grid[c][r].water/.333)) + ', 0)';
+			}
+		if (grid[c][r].color === freshBlue || grid[c][r].color === freshBlue1 || grid[c][r].color === blue) {ctx.fillStyle = blue;}
+		ctx.fill();
+		ctx.closePath();
+		}
+	}
+}
+
+function drawMaxTempMap() {
+	let worldTempHighest = 0;
+	let worldTempLowest = 100;
+	for(c=0; c<cellColumnCount; c++) {
+		for(r=0; r<cellRowCount; r++) {
+			if (grid[c][r].maxTemp > worldTempHighest && grid[c][r].color !== blue) {worldTempHighest = grid[c][r].maxTemp;}
+			if (grid[c][r].maxTemp < worldTempLowest && grid[c][r].color !== blue) {worldTempLowest = grid[c][r].maxTemp;}
+		}
+	}
+	
+	let tempRange = worldTempHighest - worldTempLowest;
+	
+	for(c=0; c<cellColumnCount; c++) {
+		for(r=0; r<cellRowCount; r++) {
+			ctx.beginPath();
+			ctx.rect(grid[c][r].x, grid[c][r].y, cellWidth, cellHeight);
+			if (((worldTempHighest - grid[c][r].maxTemp)/tempRange) < .333) {
+				ctx.fillStyle = 'rgb(255,' +  Math.round(255 * (((worldTempHighest - grid[c][r].maxTemp)/tempRange))/.333) + ', 0)';
+			}
+			else if (((worldTempHighest - grid[c][r].maxTemp)/tempRange) >= .33 && ((worldTempHighest - grid[c][r].maxTemp)/tempRange) < .666) {
+				ctx.fillStyle = 'rgb(' + Math.round(255 * (((.666 - (worldTempHighest - grid[c][r].maxTemp)/tempRange))/.333)) + ', 255, 0)';
+			}
+			else if (((worldTempHighest - grid[c][r].maxTemp)/tempRange) >= .666) {
+				ctx.fillStyle = 'rgb(0, 255, ' + Math.round(255 * (((worldTempHighest - grid[c][r].maxTemp)/tempRange) - .666) * 3) +')';
+			}
+			if (grid[c][r].color === freshBlue || grid[c][r].color === freshBlue1 || grid[c][r].color === blue) {ctx.fillStyle = blue;}
+			ctx.fill();
+			ctx.closePath();
+		}
+	}
+}
+
+function drawMinTempMap() {
+	let worldTempHighest = 0;
+	let worldTempLowest = 0;
+	for(c=0; c<cellColumnCount; c++) {
+		for(r=0; r<cellRowCount; r++) {
+			if (grid[c][r].minTemp > worldTempHighest) {worldTempHighest = grid[c][r].minTemp;}
+			if (grid[c][r].minTemp < worldTempLowest) {worldTempLowest = grid[c][r].minTemp;}
+		}
+	}
+	
+	let tempRange = worldTempHighest - worldTempLowest;
+	
+	for(c=0; c<cellColumnCount; c++) {
+		for(r=0; r<cellRowCount; r++) {
+			ctx.beginPath();
+			ctx.rect(grid[c][r].x, grid[c][r].y, cellWidth, cellHeight);
+			if (((worldTempHighest - grid[c][r].minTemp)/tempRange) < .33) {
+				ctx.fillStyle = 'rgb(255,' +  Math.round(255 * (((worldTempHighest - grid[c][r].minTemp)/tempRange))/.33) + ', 0)';
+			}
+			else if (((worldTempHighest - grid[c][r].minTemp)/tempRange) >= .33 && ((worldTempHighest - grid[c][r].minTemp)/tempRange) < .67) {
+				ctx.fillStyle = 'rgb(' + Math.round(255 * (((.67 - (worldTempHighest - grid[c][r].minTemp)/tempRange))/.34)) + ', 255, 0)';
+			}
+			if (((worldTempHighest - grid[c][r].minTemp)/tempRange) >= .67 && ((worldTempHighest - grid[c][r].minTemp)/tempRange) <= 1) {
+				ctx.fillStyle = 'rgb(0, 255, ' + Math.round(255 * (((worldTempHighest - grid[c][r].minTemp)/tempRange) - .67)*3) +')';
+			}
+			if (grid[c][r].color === freshBlue || grid[c][r].color === freshBlue1 || grid[c][r].color === blue) {ctx.fillStyle = blue;}
+			ctx.fill();
+			ctx.closePath();
+		}
+	}
+}
+
+function drawMaxRangeMap() {
+	let worldHighestRange = 0;
+	for(c=0; c<cellColumnCount; c++) {
+		for(r=0; r<cellRowCount; r++) {
+			if ((grid[c][r].maxTemp - grid[c][r].minTemp) > worldHighestRange) {worldHighestRange = (grid[c][r].maxTemp - grid[c][r].minTemp);}
+		}
+	}
+	
+	for(c=0; c<cellColumnCount; c++) {
+		for(r=0; r<cellRowCount; r++) {
+			let cellRange = (grid[c][r].maxTemp - grid[c][r].minTemp);
+			ctx.beginPath();
+			ctx.rect(grid[c][r].x, grid[c][r].y, cellWidth, cellHeight);
+			if ((cellRange/worldHighestRange) >= .666) {
+				ctx.fillStyle = 'rgb(255,' +  Math.round(255 * (1 - (cellRange/worldHighestRange)) / .333) + ', 0)';
+			}
+			else if ((cellRange/worldHighestRange) >= .333 && (cellRange/worldHighestRange) < .666) {
+				ctx.fillStyle = 'rgb(' + Math.round(255 * ((cellRange/worldHighestRange) - .333) * 3) + ', 255, 0)';
+			}
+			if ((cellRange/worldHighestRange < .333)) {
+				ctx.fillStyle = 'rgb(0, 255, ' + Math.round(255 * (.333 - (cellRange/worldHighestRange)) / .333) +')';
+			}
+			if (grid[c][r].color === freshBlue || grid[c][r].color === freshBlue1 || grid[c][r].color === blue) {ctx.fillStyle = blue;}
+			ctx.fill();
+			ctx.closePath();
+		}
+	}
+}
+
+function drawAvgTempMap() {
+	let worldTempHighest = 0;
+	for(c=0; c<cellColumnCount; c++) {
+		for(r=0; r<cellRowCount; r++) {
+			if (((grid[c][r].maxTemp + grid[c][r].minTemp) / 2) > worldTempHighest) {worldTempHighest = ((grid[c][r].maxTemp + grid[c][r].minTemp) / 2);}
+		}
+	}
+	
+	for(c=0; c<cellColumnCount; c++) {
+		for(r=0; r<cellRowCount; r++) {
+			let cellAvg = ((grid[c][r].maxTemp + grid[c][r].minTemp) / 2);
+			ctx.beginPath();
+			ctx.rect(grid[c][r].x, grid[c][r].y, cellWidth, cellHeight);
+			if ((cellAvg/worldTempHighest) >= .666) {
+				ctx.fillStyle = 'rgb(255,' +  Math.round(255 * (1 - (cellAvg/worldTempHighest)) / .333) + ', 0)';
+			}
+			else if ((cellAvg/worldTempHighest) >= .333 && (cellAvg/worldTempHighest) < .666) {
+				ctx.fillStyle = 'rgb(' + Math.round(255 * ((cellAvg/worldTempHighest) - .333) * 3) + ', 255, 0)';
+			}
+			if ((cellAvg/worldTempHighest) < .333) {
+				ctx.fillStyle = 'rgb(0, 255, ' + Math.round(255 * (.333 - (cellAvg/worldTempHighest)) / .333) +')';
+			}
+			if (grid[c][r].color === freshBlue || grid[c][r].color === freshBlue1 || grid[c][r].color === blue) {ctx.fillStyle = blue;}
+			ctx.fill();
+			ctx.closePath();
+		}
+	}
+}
+
+function drawBiomes() {
+	let tundra = '#00FFFF';
+	let desert = '#ff4300';
+	let temperateGrassland = '#72ff00';
+	let savanna = '#ffc700';
+	let taiga = '#00aaff';
+	let temperateDeciduous = '#00cc00';
+	let tropicalSeasonalRain = '#00ff80';
+	let temperateRainforest = '#00825f';
+	let rainforest = '#006006';
+	let mtnCount = 0, tundraCount = 0, desertCount = 0, temperateGrassCount = 0, savannaCount = 0, taigaCount = 0, temperateDeciduousCount = 0, tropicSeasonalCount = 0, temperateRainCount = 0, rainforestCount = 0;
+	for(c=0; c<cellColumnCount; c++) {
+		for(r=0; r<cellRowCount; r++) {
+			ctx.beginPath();
+			ctx.rect(grid[c][r].x, grid[c][r].y, cellWidth, cellHeight);
+			if (grid[c][r].color === white) {
+				ctx.fillStyle = white;
+				mtnCount++;
+			}
+			else if (grid[c][r].avgTemp <= 23 && grid[c][r].color !== blue) {
+				ctx.fillStyle = tundra;
+				tundraCount++;
+			}
+			else if (grid[c][r].avgTemp < 1000 && grid[c][r].avgTemp > 23 && grid[c][r].water < ((.0029762 * grid[c][r].avgTemp) - .0685) && grid[c][r].color !== blue) {
+				ctx.fillStyle = desert;
+				desertCount++;
+			}
+			else if (grid[c][r].avgTemp < 68 && grid[c][r].avgTemp > 23 && grid[c][r].water < ((.0069444 * grid[c][r].avgTemp) - .1597) && grid[c][r].color !== blue) {
+				ctx.fillStyle = temperateGrassland;
+				temperateGrassCount++;
+			}
+			else if (grid[c][r].avgTemp < 1000 && grid[c][r].avgTemp >= 68 && grid[c][r].water < ((.0069444 * grid[c][r].avgTemp) - .1597) && grid[c][r].color !== blue) {
+				ctx.fillStyle = savanna;
+				savannaCount++;
+			}
+			else if (grid[c][r].avgTemp < 37 && grid[c][r].avgTemp > 23 && grid[c][r].color !== blue) {
+				ctx.fillStyle = taiga;
+				taigaCount++;
+			}
+			else if (grid[c][r].avgTemp < 68 && grid[c][r].avgTemp >= 37 && grid[c][r].water < ((.0050778 * grid[c][r].avgTemp) + .2293) && grid[c][r].color !== blue) {
+				ctx.fillStyle = temperateDeciduous;
+				temperateDeciduousCount++;
+			}
+			else if (grid[c][r].avgTemp < 1000 && grid[c][r].avgTemp >= 68 && grid[c][r].water < ((.0050778 * grid[c][r].avgTemp) + .2293) && grid[c][r].color !== blue) {
+				ctx.fillStyle = tropicalSeasonalRain;
+				tropicSeasonalCount++;
+			}
+			else if (grid[c][r].avgTemp < 68 && grid[c][r].avgTemp >= 37 && grid[c][r].color !== blue) {
+				ctx.fillStyle = temperateRainforest;
+				temperateRainCount++;
+			}
+			else if (grid[c][r].avgTemp < 1000 && grid[c][r].avgTemp >= 68 && grid[c][r].color !== blue) {
+				ctx.fillStyle = rainforest;
+				rainforestCount++;
+			}
+			if (grid[c][r].color === freshBlue || grid[c][r].color === freshBlue1 || grid[c][r].color === blue) {ctx.fillStyle = blue;}
+			ctx.fill();
+			ctx.closePath();
+		}
+	}
+	console.log("Mountains: " + Math.round(mtnCount/(tundraCount + desertCount + temperateGrassCount + savannaCount + taigaCount + temperateDeciduousCount + tropicSeasonalCount + temperateRainCount + rainforestCount) * 100) + "%");
+	console.log("Tundra: " + Math.round(tundraCount/(mtnCount + desertCount + temperateGrassCount + savannaCount + taigaCount + temperateDeciduousCount + tropicSeasonalCount + temperateRainCount + rainforestCount) * 100) + "%");
+	console.log("Desert: " + Math.round(desertCount/(mtnCount + tundraCount + temperateGrassCount + savannaCount + taigaCount + temperateDeciduousCount + tropicSeasonalCount + temperateRainCount + rainforestCount) * 100) + "%");
+	console.log("Temperate Grasslands: " + Math.round(temperateGrassCount/(mtnCount + tundraCount + desertCount + savannaCount + taigaCount + temperateDeciduousCount + tropicSeasonalCount + temperateRainCount + rainforestCount) * 100) + "%");
+	console.log("Savanna: " + Math.round(savannaCount/(mtnCount + tundraCount + desertCount + temperateGrassCount + taigaCount + temperateDeciduousCount + tropicSeasonalCount + temperateRainCount + rainforestCount) * 100) + "%");
+	console.log("Taiga: " + Math.round(taigaCount/(mtnCount + tundraCount + desertCount + temperateGrassCount + savannaCount + temperateDeciduousCount + tropicSeasonalCount + temperateRainCount + rainforestCount) * 100) + "%");
+	console.log("Temperate Deciduous Forest: " + Math.round(temperateDeciduousCount/(mtnCount + tundraCount + desertCount + temperateGrassCount + savannaCount + taigaCount + tropicSeasonalCount + temperateRainCount + rainforestCount) * 100) + "%");
+	console.log("Tropical Seasonal Rainforest: " + Math.round(tropicSeasonalCount/(mtnCount + tundraCount + desertCount + temperateGrassCount + savannaCount + taigaCount + temperateDeciduousCount + temperateRainCount + rainforestCount) * 100) + "%");
+	console.log("Temperate Rainforest: " + Math.round(temperateRainCount/(mtnCount + tundraCount + desertCount + temperateGrassCount + savannaCount + taigaCount + temperateDeciduousCount + tropicSeasonalCount + rainforestCount) * 100) + "%");
+	console.log("Tropical Rainforest: " + Math.round(rainforestCount/(mtnCount + tundraCount + desertCount + temperateGrassCount + savannaCount + taigaCount + temperateDeciduousCount + tropicSeasonalCount + temperateRainCount) * 100) + "%");
+}
+
+function addLake() {
+	let lakePlaced = false;
+	while (lakePlaced === false) {
+		let lakeX = Math.floor(Math.random() * (cellColumnCount));
+		let lakeY = Math.floor(Math.random() * (cellRowCount-10)+5);
+		let tooCloseN = false, tooCloseNE = false, tooCloseE = false, tooCloseSE = false, tooCloseS = false, tooCloseSW = false, tooCloseW = false, tooCloseNW = false;
+		let Ndist = 0, NEdist = 0, Edist = 0, SEdist = 0, Sdist = 0, SWdist = 0, Wdist = 0, NWdist = 0;
+		for (let i = 0; i < 10; i++)  {
+			Ndist--;
+			if (grid[lakeX][(cellRowCount + lakeY + Ndist) % cellRowCount].color === blue) {
+				tooCloseN = true;
+			}
+		}
+		for (let i = 0; i < 10; i++)  {
+			Wdist--;
+			if (grid[(cellColumnCount + (lakeX + Wdist)) % cellColumnCount][lakeY].color === blue) {
+				tooCloseW = true;
+			}
+		}
+		for (let i = 0; i < 10; i++)  {
+			Sdist++;
+			if (grid[lakeX][(lakeY + Sdist) % cellRowCount].color === blue) {
+				tooCloseS = true;
+			}
+		}
+		for (let i = 0; i < 10; i++)  {
+			Edist++;
+			if (grid[(lakeX + Edist) % cellColumnCount][lakeY].color === blue) {
+				tooCloseE = true;
+			}
+		}
+		for (let i = 0; i < 7; i++) {
+			NWdist++;
+			if (grid[(cellColumnCount + lakeX - NWdist) % cellColumnCount][(cellRowCount + lakeY - NWdist) % cellRowCount].color === blue) {
+				tooCloseNW = true;
+			}
+		}
+		for (let i = 0; i < 7; i++) {
+			SWdist++;
+			if (grid[(cellColumnCount + lakeX - SWdist) % cellColumnCount][(lakeY + SWdist) % cellRowCount].color === blue) {
+				tooCloseSW = true;
+			}
+		}
+		for (let i = 0; i < 7; i++) {
+			SEdist++;
+			if (grid[(lakeX + SEdist) % cellColumnCount][(lakeY + SEdist) % cellRowCount].color === blue) {
+				tooCloseSE = true;
+			}
+		}
+		for (let i = 0; i < 7; i++) {
+			NEdist++;
+			if (grid[(lakeX + NEdist) % cellColumnCount][(cellRowCount + lakeY - NEdist) % cellRowCount].color === blue) {
+				tooCloseNE = true;
+			}
+		}
+		if (tooCloseN === false && tooCloseS === false && tooCloseE === false && tooCloseW === false && tooCloseNE === false && tooCloseNW === false && tooCloseSE === false && tooCloseSW === false) {
+			centerX = lakeX;
+			centerY = lakeY;
+			//centerX += ((Math.floor(Math.random() * 5)) * (Math.floor(Math.random()*2) == 1 ? 1 : -1));
+			if (centerX < 0) {centerX = 0;} else if (centerX >= cellColumnCount) {centerX = (cellColumnCount-1);}
+			//centerY += ((Math.floor(Math.random() * 5)) * (Math.floor(Math.random()*2) == 1 ? 1 : -1))
+			if (centerY < 7) {centerY = 7;} else if (centerY >= (cellRowCount-7)) {centerY = (cellRowCount-8);}
+			grid[centerX][centerY].color = freshBlue;
+			
+			point1y = centerY - (Math.floor(Math.random() * 1) + 4);
+				if(point1y < 0) {point1y = 0;}
+			point1x = centerX + ((Math.floor(Math.random() * 2)) * (Math.floor(Math.random()*2) == 1 ? 1 : -1));
+				if(point1x < 0) {point1x = 0;}
+				else if(point1x >= cellColumnCount) {point1x = (cellColumnCount-1);}
+				
+			point3y = centerY + (Math.floor(Math.random() * 1) + 4);
+				if(point3y >= (cellRowCount)) {point3y = cellRowCount-1;}
+			point3x = centerX + ((Math.floor(Math.random() * 2)) * (Math.floor(Math.random()*2) == 1 ? 1 : -1));
+				if(point3x < 0) {point3x = 0;}
+				else if(point3x >= cellColumnCount) {point3x = (cellColumnCount-1);}
+			
+			point2x = centerX + (Math.floor(Math.random() * 1) + 4);
+				if(point2x >= cellColumnCount) {point2x = (((point2x - centerX) + (cellColumnCount - (cellColumnCount - centerX)))) % cellColumnCount;}   
+			point2y = centerY + ((Math.floor(Math.random() * 2)) * (Math.floor(Math.random()*2) == 1 ? 1 : -1));
+				if(point2y < (point1y + 2)) {point2y = (point1y + 2);}
+				else if(point2y > (point3y - 2)) {point2y = (point3y - 2);}
+			
+			point4x = centerX - (Math.floor(Math.random() * 1) + 4);
+				if(point4x < 0) {point4x = ((centerX + (centerX - point4x)) + (cellColumnCount - ((centerX - point4x)*2)));}
+			point4y =centerY + ((Math.floor(Math.random() * 2)) * (Math.floor(Math.random()*2) == 1 ? 1 : -1));
+				if(point4y < (point1y +2)) {point4y = (point1y + 2);}
+				else if(point4y > (point3y - 2)) {point4y = (point3y - 2);}
+				
+			//console.log("CenterX: " + centerX + " CenterY: " + centerY);
+			//console.log("point1x " + point1x + " point3x " + point3x + " point2y " + point2y + " point4y " + point4y);
+			
+			//FINDING MIDPOINTS BETWEEN POINTS 1, 2, 3, 4
+			if (point2x > point1x) {
+				point12x = Math.floor((point1x + point2x)/2);}
+			else if (point2x < point1x) {
+				point12x = Math.floor((((cellColumnCount - Math.abs(point1x - point2x))/2) + (cellColumnCount - (cellColumnCount - point1x))) % cellColumnCount)}
+			difx = (Math.max((Math.min((point12x - point1x), (point2x - point12x))-1), 0))/3;
+			difx *= Math.floor(Math.random()*2) == 1 ? 1.25 : -0.5;
+			point12x += Math.floor(Math.random() * difx);
+			
+			point12y = Math.floor((point2y + point1y)/2);
+			dify = (Math.max((Math.min((point2y - point12y), (point12y - point1y))-1), 0))/3;
+			dify *= Math.floor(Math.random()*2) == 1 ? 1.25 : -0.5;
+			point12y += Math.floor(Math.random() * dify);
+			
+			if (point2x > point3x) {
+				point23x = Math.floor((point3x + point2x)/2);}
+			else if (point2x < point3x) {
+				point23x = Math.floor((((cellColumnCount - Math.abs(point3x - point2x))/2) + (cellColumnCount - (cellColumnCount - point3x))) % cellColumnCount)}
+			difx1 = (Math.max((Math.min((point2x - point23x), (point23x - point3x))-1), 0))/3;
+			difx1 *= (Math.floor(Math.random()*2) == 1 && difx < 0) ? 1.25 : -0.5;
+			point23x += Math.floor(Math.random() * difx1);
+			
+			point23y = Math.floor((point2y + point3y)/2);
+			dify1 = (Math.max((Math.min((point3y - point23y), (point23y - point2y))-1), 0))/3;
+			dify1 *= (Math.floor(Math.random()*2) == 1 && dify < 0) ? 1.25 : -0.5;
+			point23y += Math.floor(Math.random() * dify1);
+			
+			if (point4x < point3x) {
+				point34x = Math.floor((point3x + point4x)/2);}
+			else if (point4x > point3x) {
+				point34x = (Math.floor((point3x + ((cellColumnCount - Math.abs(point3x - point4x))/2)) + (cellColumnCount - ((cellColumnCount - Math.abs(point3x - point4x)))))) % cellColumnCount}
+			
+			difx2 = (Math.max((Math.min((point3x - point34x), (point34x - point4x))-1), 0))/3;
+			difx2 *= (Math.floor(Math.random()*2) == 1 && difx < 0 && difx1 < 0) ? 1.25 : -0.5;
+			point34x += Math.floor(Math.random() * difx2);
+			
+			point34y = Math.floor((point4y + point3y)/2);
+			dify2 = (Math.max((Math.min((point3y - point34y), (point34y - point4y))-1), 0))/3;
+			dify2 *= (Math.floor(Math.random()*2) == 1 && dify < 0 && dify1 < 0) ? 1.25 : -0.5;
+			point34y += Math.floor(Math.random() * dify2);         
+			
+			if (point4x < point1x) {
+				point41x = Math.floor((point1x + point4x)/2);}
+			else if (point4x > point1x) {
+				point41x = (Math.floor((point1x + ((cellColumnCount - Math.abs(point1x - point4x))/2)) + (cellColumnCount - ((cellColumnCount - Math.abs(point1x - point4x)))))) % cellColumnCount}
+			
+			difx3 = (Math.max((Math.min((point1x - point41x), (point41x - point4x))-1), 0))/3;
+			difx3 *= (Math.floor(Math.random()*2) == 1 && difx < 0 && difx1 < 0 && difx2 < 0) ? 1.25 : -0.5;
+			point41x += Math.floor(Math.random() * difx3);
+			
+			point41y = Math.floor((point4y + point1y)/2);
+			dify3 = (Math.max((Math.min((point4y - point41y), (point41y - point1y))-1), 0))/3;
+			dify3 *= (Math.floor(Math.random()*2) == 1 && dify < 0 && dify1 < 0 && dify2) ? 1.25 : -0.5;
+			point41y += Math.floor(Math.random() * dify3);
+			
+			//SLOPES(M) AND INTERSECTIONS(B)
+			//Upper Half
+			if (point4x < point1x || point4x < point41x) {
+				m = (point4y - point41y)/(point4x - point41x);
+				b = point41y - (m * point41x);
+				if (point4x < point41x && point4x > point1x) {
+					m0 = (point1y - point41y)/(cellColumnCount - Math.abs(point41x - point1x));
+					b0 = (point1y + 2) - (m0 * point1x);}
+			}
+			else if (point4x > point1x) {
+				mZ = (point41y - point4y)/(cellColumnCount - Math.abs(point4x - point41x))
+				bZ = point4y - (mZ * point4x);
+				bZ1 = point41y - (mZ * point41x); 
+			}
+			
+			if (point41x < point1x) {
+				m1 = (point41y - point1y)/(point41x - point1x);
+				b1 = point1y - (m1 * point1x);}
+			else if (point41x > point1x) {
+				m1 = (point1y - point41y)/(cellColumnCount - Math.abs(point41x - point1x));
+				b1 = point41y - (m1 * point41x);}
+			
+			if (point12x > point1x) {
+				m2 = (point1y - point12y)/(point1x - point12x);
+				b2 = point12y - (m2 * point12x);}
+			else if (point12x < point1x) {
+				m2 = (point12y - point1y)/(cellColumnCount - Math.abs(point1x - point12x));
+				b2 = point12y - (m2 * point12x);}
+			
+			if (point2x > point1x || point2x > point12x) {
+				m3 = (point12y - point2y)/(point12x - point2x);
+				b3 = point2y - (m3 * point2x);
+				if (point2x > point12x && point2x < point1x) {
+					m30 = (point12y - point1y)/(cellColumnCount - Math.abs(point12x - point1x));
+					b30 = (point1y + 2) - (m30 * point1x);}
+			}
+			else if (point2x < point1x) {
+				m3Z = (point2y - point12y)/(cellColumnCount - Math.abs(point2x - point12x));
+				b3Z = point2y - (m3Z * point2x);
+				b3Z1 = point12y - (m3Z * point12x);
+			}
+			
+			//Lower Half
+			if (point4x < point3x || point4x < point34x) {
+				m4 = (point4y - point34y)/(point4x - point34x);
+				b4 = point34y - (m4 * point34x);
+				if (point4x < point34x && point4x > point3x) {
+					m40 = (point3y - point34y)/(cellColumnCount - Math.abs(point3x - point34x));
+					b40 = (point3y - 2) - (m40 * point3x);
+				}
+			}
+			else if (point4x > point3x) {
+				m4Z = (point34y - point4y)/(cellColumnCount - Math.abs(point4x - point34x));
+				b4Z = point4y - (m4Z * point4x);
+				b4Z1 = point34y - (m4Z * point34x);
+				}
+			
+			if (point34x < point3x) {
+				m5 = (point34y - point3y)/(point34x - point3x);
+				b5 = point3y - (m5 * point3x);}
+			else if (point34x > point3x) {
+				m5 = (point3y - point34y)/(cellColumnCount - Math.abs(point34x - point3x));
+				b5 = point34y - (m5 * point34x);}
+			
+			if (point23x > point3x) {
+				m6 = (point3y - point23y)/(point3x - point23x);
+				b6 = point23y - (m6 * point23x);}
+			else if (point23x < point3x) {
+				m6 = (point23y - point3y)/(cellColumnCount - Math.abs(point23x - point3x));
+				b6 = point23y - (m6 * point23x);}
+			
+			if (point2x > point3x || point2x > point23x) {
+				m7 = (point23y - point2y)/(point23x - point2x);
+				b7 = point2y - (m7 * point2x);
+				if (point2x > point23x && point2x < point3x) {
+					m70 = (point23y - point3y)/(cellColumnCount - Math.abs(point23x - point3x));
+					b70 = (point3y - 2) - (m70 * point3x);
+				}
+			}
+			else if (point2x < point3x) {
+				m7Z = (point2y - point23y)/(cellColumnCount - Math.abs(point2x - point23x));
+				b7Z = point2y - (m7Z * point2x);
+				b7Z1 = point23y - (m7Z * point23x);
+			}
+			
+			for(c=0; c<cellColumnCount; c++) {
+				for(r=0; r<cellRowCount; r++) {
+				//Upper Half
+					if (point4x < point1x || point4x < point41x) { 
+						if (c > (point4x + 1) && c <= point41x && r <= point4y && r > (m*c)+b ) {    
+							grid[c][r].color = freshBlue;
+						}
+						else if (point4x < point41x && point4x > point1x && c <= point1x && c >= 0 && r <= point4y && r > (m0*c)+b0 ) {
+							grid[c][r].color = freshBlue;
+						}
+					}
+					else if (point4x > point1x) {
+						if (c > (point4x + 1) && c < cellColumnCount && r <= point4y && r > (mZ*c)+bZ ) {
+							grid[c][r].color = freshBlue;
+						}
+						else if (c <= point41x && c >= 0 && r <= point4y && r > (mZ*c)+bZ1 ) {
+							grid[c][r].color = freshBlue;
+						}
+					}
+					
+					if (point41x < point1x) {   
+						if (c >= point41x && c <= point1x && r <= Math.max(point4y, point2y) && r > (m1*c) + b1 && r > (point1y + 1)) {
+							grid[c][r].color = freshBlue;
+						}
+					}
+					else if (point41x > point1x) {
+						if (c >= point41x && c < cellColumnCount && r <= point4y && r > (m1*c)+ b1 && r > (point1y + 1)) {
+							grid[c][r].color = freshBlue;
+						}
+					}
+					
+					if (point12x > point1x) {  
+						if (c >= point1x && c <= point12x && r <= Math.max(point2y, point4y) && r > (m2*c) + b2 && r > (point1y + 1)) {
+							grid[c][r].color = freshBlue;
+						}
+					}
+					else if (point12x < point1x) {
+						if (c <= point12x && c >= 0 && r <= point2y && r > (m2*c) + b2 && r > (point1y + 1)) {
+							grid[c][r].color = freshBlue;
+						}
+					}
+					
+					if (point2x > point1x || point2x > point12x) {     
+						if (c >= point12x && c < (point2x - 1) && r <= point2y && r > (m3*c) + b3) {    
+							grid[c][r].color = freshBlue;
+						}
+						else if (point2x > point12x && point2x < point1x && c >= point1x && c < cellColumnCount && r <= point2y && r > (m30*c) + b30 ) {
+							grid[c][r].color = freshBlue;
+						}
+					}
+					else if (point2x < point1x) {
+						if (c < (point2x + 1) && c >= 0 && r <= point2y && r > (m3Z*c) + b3Z ) {
+							grid[c][r].color = freshBlue;
+						}
+						else if (c >= point12x && c < cellColumnCount && r <= point2y && r > (m3Z*c)+b3Z1 ) {
+							grid[c][r].color = freshBlue;
+						}
+					}
+				//Lower Half
+					if (point4x < point3x || point4x < point34x) {   
+						if (c > (point4x + 1) && c <= point34x && r >= point4y && r < (m4*c) + b4) {    
+							grid[c][r].color = freshBlue;
+						}
+						else if (point4x < point34x && point4x > point3x && c <= point3x && c >= 0 && r >= point4y && r < (m40*c)+b40) {
+							grid[c][r].color = freshBlue;
+						}
+					}
+					else if (point4x > point3x) {  
+						if (c > (point4x + 1) && c < cellColumnCount && r >= point4y && r < (m4Z*c)+b4Z ) {
+							grid[c][r].color = freshBlue;
+						}
+						else if (c <= point34x && c >= 0 && r >= point4y && r < (m4Z*c)+b4Z1 ) {
+							grid[c][r].color = freshBlue;
+						}
+					}
+					
+					if (point34x < point3x) {             
+						if (c >= point34x && c <= point3x && r >= Math.min(point4y, point2y) && r < (m5*c) + b5 && r < (point3y - 1)) {
+							grid[c][r].color = freshBlue;
+						}
+					}
+					else if (point34x > point3x) {
+						if (c >= point34x && c < cellColumnCount && r >= point4y && r < (m5*c)+ b5 && r > (point1y + 1)) {
+							grid[c][r].color = freshBlue;
+						}
+					}
+					
+					
+					if (point23x > point3x) {    
+						if (c >= point3x && c <= point23x && r >= Math.min(point2y, point4y) && r < (m6*c) + b6 && r < (point3y - 1)) {
+							grid[c][r].color = freshBlue;
+						}
+					}
+					else if (point23x < point3x) {
+						if (c <= point23x && c >= 0 && r >= point2y && r < (m6*c) + b6 && r > (point1y + 1)) {
+							grid[c][r].color = freshBlue;
+						}
+					}
+					
+					if (point2x > point3x || point2x > point23x) {   
+						if (c >= point23x && c < (point2x - 1) && r >= point2y && r < (m7*c) + b7) {
+							grid[c][r].color = freshBlue;
+						}
+						else if (point2x > point23x && point2x < point3x && c >= point3x && c < cellColumnCount && r >= point2y && r < (m70*c)+b70) {
+							grid[c][r].color = freshBlue;
+						}
+					}
+					else if (point2x < point3x) {
+						if (c < (point2x + 1) && c >= 0 && r >= point2y && r < (m7Z*c)+b7Z ) {
+							grid[c][r].color = freshBlue;
+						}
+						else if (c >= point23x && c < cellColumnCount && r >= point2y && r < (m7Z*c)+b7Z1) {
+							grid[c][r].color = freshBlue;
+						}
+					}
+					
+				}
+			}
+			lakePlaced = true;
+		}
+	}
+}
+
+function addRiver() {
+	let riverPlaced = false;
+	while (riverPlaced === false) {
+		let lakeX = Math.floor(Math.random() * (cellColumnCount));
+		let lakeY = Math.floor(Math.random() * (cellRowCount-10)+5);
+		if (lakeY >= cellRowCount) {lakeY = (cellRowCount-1);}
+		let cloneX = JSON.parse(JSON.stringify(lakeX));
+		let cloneY = JSON.parse(JSON.stringify(lakeY));
+		let tooCloseN = false, tooCloseNE = false, tooCloseE = false, tooCloseSE = false, tooCloseS = false, tooCloseSW = false, tooCloseW = false, tooCloseNW = false;
+		let Ndist = 0, NEdist = 0, Edist = 0, SEdist = 0, Sdist = 0, SWdist = 0, Wdist = 0, NWdist = 0;
+		for (let i = 0; i < 4; i++)  {
+			if (grid[lakeX][lakeY].color === white) {tooCloseN = true;}
+			Ndist--;
+			if (grid[lakeX][(cellRowCount + lakeY + Ndist) % cellRowCount].color === blue) {
+				tooCloseN = true;
+			}
+		}
+		for (let i = 0; i < 4; i++)  {
+			if (grid[lakeX][lakeY].color === white) {tooCloseN = true;}
+			Wdist--;
+			if (grid[(cellColumnCount + (lakeX + Wdist)) % cellColumnCount][lakeY].color === blue) {
+				tooCloseW = true;
+			}
+		}
+		for (let i = 0; i < 4; i++)  {
+			if (grid[lakeX][lakeY].color === white) {tooCloseN = true;}
+			Sdist++;
+			if (grid[lakeX][(lakeY + Sdist) % cellRowCount].color === blue) {
+				tooCloseS = true;
+			}
+		}
+		for (let i = 0; i < 4; i++)  {
+			if (grid[lakeX][lakeY].color === white) {tooCloseN = true;}
+			Edist++;
+			if (grid[(lakeX + Edist) % cellColumnCount][lakeY].color === blue) {
+				tooCloseE = true;
+			}
+		}
+		for (let i = 0; i < 2; i++) {
+			if (grid[lakeX][lakeY].color === white) {tooCloseN = true;}
+			NWdist++;
+			if (grid[(cellColumnCount + lakeX - NWdist) % cellColumnCount][(cellRowCount + lakeY - NWdist) % cellRowCount].color === blue) {
+				tooCloseNW = true;
+			}
+		}
+		for (let i = 0; i < 2; i++) {
+			if (grid[lakeX][lakeY].color === white) {tooCloseN = true;}
+			SWdist++;
+			if (grid[(cellColumnCount + lakeX - SWdist) % cellColumnCount][(lakeY + SWdist) % cellRowCount].color === blue) {
+				tooCloseSW = true;
+			}
+		}
+		for (let i = 0; i < 2; i++) {
+			if (grid[lakeX][lakeY].color === white) {tooCloseN = true;}
+			SEdist++;
+			if (grid[(lakeX + SEdist) % cellColumnCount][(lakeY + SEdist) % cellRowCount].color === blue) {
+				tooCloseSE = true;
+			}
+		}
+		for (let i = 0; i < 2; i++) {
+			if (grid[lakeX][lakeY].color === white) {tooCloseN = true;}
+			NEdist++;
+			if (grid[(lakeX + NEdist) % cellColumnCount][(cellRowCount + lakeY - NEdist) % cellRowCount].color === blue) {
+				tooCloseNE = true;
+			}
+		}
+		if (tooCloseN === false && tooCloseS === false && tooCloseE === false && tooCloseW === false && tooCloseNE === false && tooCloseNW === false && tooCloseSE === false && tooCloseSW === false) {
+			let Ncheck = false, NEcheck = false, Echeck = false, SEcheck = false, Scheck = false, SWcheck = false, Wcheck = false, NWcheck = false;
+			Ndist = 0, NEdist = 0, Edist = 0, SEdist = 0, Sdist = 0, SWdist = 0, Wdist = 0, NWdist = 0;
+			lakeX = JSON.parse(JSON.stringify(cloneX));
+			lakeY = JSON.parse(JSON.stringify(cloneY));
+			while (Ncheck === false) {
+				if (grid[lakeX][lakeY].color === green || grid[lakeX][lakeY].color === freshBlue) {
+					Ndist++;
+					lakeY--;
+				}
+				else if (grid[lakeX][lakeY].color === freshBlue1 || grid[lakeX][lakeY].color === blue) {
+					Ncheck = true;
+				}
+				else if (grid[lakeX][lakeY].color === white) {
+					Ndist = 500;
+					Ncheck = true;
+				}
+			}
+			lakeX = JSON.parse(JSON.stringify(cloneX));
+			lakeY = JSON.parse(JSON.stringify(cloneY));
+			while (NEcheck === false) {
+				if (grid[lakeX][lakeY].color === green || grid[lakeX][lakeY].color === freshBlue) {
+					NEdist += 1.4;
+					lakeY--;
+					lakeX++;
+					if (lakeX < 0) {lakeX = (cellColumnCount-1);}
+					else if (lakeX >= cellColumnCount) {lakeX = 0;}
+				}
+				else if (grid[lakeX][lakeY].color === freshBlue1 || grid[lakeX][lakeY].color === blue) {
+					NEcheck = true;
+				}
+				else if (grid[lakeX][lakeY].color === white) {
+					NEdist = 500;
+					NEcheck = true;
+				}
+			}
+			lakeX = JSON.parse(JSON.stringify(cloneX));
+			lakeY = JSON.parse(JSON.stringify(cloneY));
+			while (Echeck === false) {
+				if (grid[lakeX][lakeY].color === green || grid[lakeX][lakeY].color === freshBlue) {
+					Edist++;
+					lakeX++;
+					if (lakeX < 0) {lakeX = (cellColumnCount-1);}
+					else if (lakeX >= cellColumnCount) {lakeX = 0;}
+				}
+				else if (grid[lakeX][lakeY].color === freshBlue1 || grid[lakeX][lakeY].color === blue) {
+					Echeck = true;
+				}
+				else if (grid[lakeX][lakeY].color === white) {
+					Edist = 500;
+					Echeck = true;
+				}
+			}
+			lakeX = JSON.parse(JSON.stringify(cloneX));
+			lakeY = JSON.parse(JSON.stringify(cloneY));
+			while (SEcheck === false) {
+				if (grid[lakeX][lakeY].color === green || grid[lakeX][lakeY].color === freshBlue) {
+					SEdist += 1.4;
+					lakeX++;
+					lakeY++;
+					if (lakeX < 0) {lakeX = (cellColumnCount-1);}
+					else if (lakeX >= cellColumnCount) {lakeX = 0;}
+				}
+				else if (grid[lakeX][lakeY].color === freshBlue1 || grid[lakeX][lakeY].color === blue) {
+					SEcheck = true;
+				}
+				else if (grid[lakeX][lakeY].color === white) {
+					SEdist = 500;
+					SEcheck = true;
+				}
+			}
+			lakeX = JSON.parse(JSON.stringify(cloneX));
+			lakeY = JSON.parse(JSON.stringify(cloneY));
+			while (Scheck === false) {
+				if (grid[lakeX][lakeY].color === green || grid[lakeX][lakeY].color === freshBlue) {
+					Sdist++;
+					lakeY++;
+					if (lakeY >= cellRowCount) {lakeY = (cellRowCount - 1);}
+				}
+				else if (grid[lakeX][lakeY].color === freshBlue1 || grid[lakeX][lakeY].color === blue) {
+					Scheck = true;
+				}
+				else if (grid[lakeX][lakeY].color === white) {
+					Sdist = 500;
+					Scheck = true;
+				}
+			}
+			lakeX = JSON.parse(JSON.stringify(cloneX));
+			lakeY = JSON.parse(JSON.stringify(cloneY));
+			while (SWcheck === false) {
+				if (grid[lakeX][lakeY].color === green || grid[lakeX][lakeY].color === freshBlue) {
+					SWdist += 1.4;
+					lakeY++;
+					lakeX--;
+					if (lakeY >= cellRowCount) {lakeY = (cellRowCount - 1);}
+					if (lakeX < 0) {lakeX = (cellColumnCount-1);}
+					else if (lakeX >= cellColumnCount) {lakeX = 0;}
+				}
+				else if (grid[lakeX][lakeY].color === freshBlue1 || grid[lakeX][lakeY].color === blue) {
+					SWcheck = true;
+				}
+				else if (grid[lakeX][lakeY].color === white) {
+					SWdist = 500;
+					SWcheck = true;
+				}
+			}
+			lakeX = JSON.parse(JSON.stringify(cloneX));
+			lakeY = JSON.parse(JSON.stringify(cloneY));
+			while (Wcheck === false) {
+				if (grid[lakeX][lakeY].color === green || grid[lakeX][lakeY].color === freshBlue) {
+					Wdist++;
+					lakeX--;
+					if (lakeX < 0) {lakeX = (cellColumnCount-1);}
+					else if (lakeX >= cellColumnCount) {lakeX = 0;}
+				}
+				else if (grid[lakeX][lakeY].color === freshBlue1 || grid[lakeX][lakeY].color === blue) {
+					Wcheck = true;
+				}
+				else if (grid[lakeX][lakeY].color === white) {
+					Wdist = 500;
+					Wcheck = true;
+				}
+			}
+			lakeX = JSON.parse(JSON.stringify(cloneX));
+			lakeY = JSON.parse(JSON.stringify(cloneY));
+			while (NWcheck === false) {
+				if (grid[lakeX][lakeY].color === green || grid[lakeX][lakeY].color === freshBlue) {
+					NWdist += 1.4;
+					lakeX--;
+					lakeY--;
+					if (lakeX < 0) {lakeX = (cellColumnCount-1);}
+					else if (lakeX >= cellColumnCount) {lakeX = 0;}
+				}
+				else if (grid[lakeX][lakeY].color === freshBlue1 || grid[lakeX][lakeY].color === blue) {
+					NWcheck = true;
+				}
+				else if (grid[lakeX][lakeY].color === white) {
+					NWdist = 500;
+					NWcheck = true;
+				}
+			}
+			lakeX = JSON.parse(JSON.stringify(cloneX));
+			lakeY = JSON.parse(JSON.stringify(cloneY));
+			let closestDist = Math.min(Ndist, NEdist, Edist, SEdist, Sdist, SWdist, Wdist, NWdist);
+			//console.log(Ndist + " " + NEdist + " " + Edist + " " + SEdist + " " + Sdist + " " + SWdist + " " + Wdist + " " + NWdist);
+			//console.log(closestDist);
+			let xMove = 0, yMove = 0;
+			let yCount = 0, xCount = 0;
+			let posDirection = 0, negDirection = 0;
+			let blueCount = 0;
+			
+			switch (closestDist) {
+				case Ndist:
+					yMove = -1; xMove = 1;
+					while (blueCount < 1 && grid[lakeX][lakeY].color !== freshBlue1) {
+						if (grid[lakeX][lakeY].isCoast === true) {blueCount++;}
+						if (grid[lakeX][lakeY].isCoast === true) {grid[lakeX][lakeY].riverMouth = true;}
+						let riverNeighbor = 0;
+						if (lakeX === 0) {
+							if (grid[cellColumnCount-1][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX + 1][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY - 1].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY + 1].color === freshBlue1) {riverNeighbor++;}
+						}
+						else if (lakeX === (cellColumnCount-1)) {
+							if (grid[lakeX - 1][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[0][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY - 1].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY + 1].color === freshBlue1) {riverNeighbor++;}
+						}
+						else {
+							if (grid[lakeX - 1][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX + 1][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY - 1].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY + 1].color === freshBlue1) {riverNeighbor++;}
+						}
+						if (riverNeighbor >= 2) {blueCount = 1;}
+						grid[lakeX][lakeY].color = freshBlue1;
+						let flowDirection = Math.random();
+						if (flowDirection < 0.66) {
+							lakeY += yMove;
+							yCount++;
+						}
+						else if ((flowDirection < 0.83 && yCount >= 2) || (flowDirection < 0.83 && negDirection === 0)) {
+							lakeX += xMove;
+							if (lakeX < 0) {lakeX = (cellColumnCount-1);}
+							else if (lakeX >= cellColumnCount) {lakeX = 0;}
+							posDirection++;
+							yCount = 0;
+							negDirection = 0;
+						}
+						else if ((flowDirection < 1 && yCount >= 2) || (flowDirection < 1 && posDirection === 0)) {
+							lakeX -= xMove;
+							if (lakeX < 0) {lakeX = (cellColumnCount-1);}
+							else if (lakeX >= cellColumnCount) {lakeX = 0;}
+							negDirection++;
+							yCount = 0;
+							posDirection = 0;
+						}
+						else {lakeY += yMove; yCount++;}
+						
+					}
+					break;
+				case NEdist:
+					yMove = -1; xMove = 1;
+					while (blueCount < 1 && grid[lakeX][lakeY].color !== freshBlue1) {
+						if (grid[lakeX][lakeY].isCoast === true) {blueCount++;}
+						if (grid[lakeX][lakeY].isCoast === true) {grid[lakeX][lakeY].riverMouth = true;}
+						let riverNeighbor = 0;
+						if (lakeX === 0) {
+							if (grid[cellColumnCount-1][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX + 1][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY - 1].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY + 1].color === freshBlue1) {riverNeighbor++;}
+						}
+						else if (lakeX === (cellColumnCount-1)) {
+							if (grid[lakeX - 1][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[0][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY - 1].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY + 1].color === freshBlue1) {riverNeighbor++;}
+						}
+						else {
+							if (grid[lakeX - 1][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX + 1][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY - 1].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY + 1].color === freshBlue1) {riverNeighbor++;}
+						}
+						if (riverNeighbor >= 2) {blueCount = 1;}
+						grid[lakeX][lakeY].color = freshBlue1;
+						let flowDirection = Math.random();
+						if (flowDirection < 0.5) {
+							lakeY += yMove;
+							yCount++;
+						}
+						else if ((flowDirection < 0.83 && yCount >= 2) || (flowDirection < 0.83 && negDirection === 0)) {
+							lakeX += xMove;
+							if (lakeX < 0) {lakeX = (cellColumnCount-1);}
+							else if (lakeX >= cellColumnCount) {lakeX = 0;}
+							posDirection++;
+							yCount = 0;
+							negDirection = 0;
+						}
+						else if ((flowDirection < 1 && yCount >= 2) || (flowDirection < 1 && posDirection === 0)) {
+							lakeX -= xMove;
+							if (lakeX < 0) {lakeX = (cellColumnCount-1);}
+							else if (lakeX >= cellColumnCount) {lakeX = 0;}
+							negDirection++;
+							yCount = 0;
+							posDirection = 0;
+						}
+						else {lakeY += yMove; yCount++;}
+					}
+					break;
+				case Edist:
+					yMove = 1; xMove = 1;
+					while (blueCount < 1 && grid[lakeX][lakeY].color !== freshBlue1) {
+						if (grid[lakeX][lakeY].isCoast === true) {blueCount++;}
+						if (grid[lakeX][lakeY].isCoast === true) {grid[lakeX][lakeY].riverMouth = true;}
+						let riverNeighbor = 0;
+						if (lakeX === 0) {
+							if (grid[cellColumnCount-1][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX + 1][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY - 1].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY + 1].color === freshBlue1) {riverNeighbor++;}
+						}
+						else if (lakeX === (cellColumnCount-1)) {
+							if (grid[lakeX - 1][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[0][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY - 1].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY + 1].color === freshBlue1) {riverNeighbor++;}
+						}
+						else {
+							if (grid[lakeX - 1][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX + 1][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY - 1].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY + 1].color === freshBlue1) {riverNeighbor++;}
+						}
+						if (riverNeighbor >= 2) {blueCount = 1;}
+						grid[lakeX][lakeY].color = freshBlue1;
+						let flowDirection = Math.random();
+						if (flowDirection < 0.66) {
+							lakeX += xMove;
+							if (lakeX < 0) {lakeX = (cellColumnCount-1);}
+							else if (lakeX >= cellColumnCount) {lakeX = 0;}
+							xCount++;
+							
+						}
+						else if ((flowDirection < 0.83 && xCount >= 2) || (flowDirection < 0.83 && negDirection === 0)) {
+							lakeY += yMove;
+							posDirection++;
+							xCount = 0;
+							negDirection = 0;
+						}
+						else if ((flowDirection < 1 && xCount >= 2) || (flowDirection < 1 && posDirection === 0)) {
+							lakeY -= yMove;
+							negDirection++;
+							xCount = 0;
+							posDirection = 0;
+						}
+						else {lakeY += yMove; yCount++;}
+					}
+					break;
+				case SEdist:
+					yMove = 1; xMove = 1;
+					while (blueCount < 1 && grid[lakeX][lakeY].color !== freshBlue1) {
+						if (grid[lakeX][lakeY].isCoast === true) {blueCount++;}
+						if (grid[lakeX][lakeY].isCoast === true) {grid[lakeX][lakeY].riverMouth = true;}
+						let riverNeighbor = 0;
+						if (lakeX === 0) {
+							if (grid[cellColumnCount-1][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX + 1][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY - 1].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY + 1].color === freshBlue1) {riverNeighbor++;}
+						}
+						else if (lakeX === (cellColumnCount-1)) {
+							if (grid[lakeX - 1][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[0][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY - 1].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY + 1].color === freshBlue1) {riverNeighbor++;}
+						}
+						else {
+							if (grid[lakeX - 1][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX + 1][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY - 1].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY + 1].color === freshBlue1) {riverNeighbor++;}
+						}
+						if (riverNeighbor >= 2) {blueCount = 1;}
+						grid[lakeX][lakeY].color = freshBlue1;
+						let flowDirection = Math.random();
+						if (flowDirection < 0.5) {
+							lakeY += yMove;
+							yCount++;
+						}
+						else if ((flowDirection < 0.83 && yCount >= 2) || (flowDirection < 0.83 && negDirection === 0)) {
+							lakeX += xMove;
+							if (lakeX < 0) {lakeX = (cellColumnCount-1);}
+							else if (lakeX >= cellColumnCount) {lakeX = 0;}
+							posDirection++;
+							yCount = 0;
+							negDirection = 0;
+						}
+						else if ((flowDirection < 1 && yCount >= 2) || (flowDirection < 1 && posDirection === 0)) {
+							lakeX -= xMove;
+							if (lakeX < 0) {lakeX = (cellColumnCount-1);}
+							else if (lakeX >= cellColumnCount) {lakeX = 0;}
+							negDirection++;
+							yCount = 0;
+							posDirection = 0;
+						}
+						else {lakeY += yMove; yCount++;}
+					}
+					break;
+				case Sdist:
+					yMove = 1; xMove = 1;
+					while (blueCount < 1 && grid[lakeX][lakeY].color !== freshBlue1) {
+						if (grid[lakeX][lakeY].isCoast === true) {blueCount++;}
+						if (grid[lakeX][lakeY].isCoast === true) {grid[lakeX][lakeY].riverMouth = true;}
+						let riverNeighbor = 0;
+						if (lakeX === 0) {
+							if (grid[cellColumnCount-1][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX + 1][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY - 1].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY + 1].color === freshBlue1) {riverNeighbor++;}
+						}
+						else if (lakeX === (cellColumnCount-1)) {
+							if (grid[lakeX - 1][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[0][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY - 1].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY + 1].color === freshBlue1) {riverNeighbor++;}
+						}
+						else {
+							if (grid[lakeX - 1][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX + 1][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY - 1].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY + 1].color === freshBlue1) {riverNeighbor++;}
+						}
+						if (riverNeighbor >= 2) {blueCount = 1;}
+						grid[lakeX][lakeY].color = freshBlue1;
+						let flowDirection = Math.random();
+						if (flowDirection < 0.66) {
+							lakeY += yMove;
+							yCount++;
+						}
+						else if ((flowDirection < 0.83 && yCount >= 2) || (flowDirection < 0.83 && negDirection === 0)) {
+							lakeX += xMove;
+							if (lakeX < 0) {lakeX = (cellColumnCount-1);}
+							else if (lakeX >= cellColumnCount) {lakeX = 0;}
+							posDirection++;
+							yCount = 0;
+							negDirection = 0;
+						}
+						else if ((flowDirection < 1 && yCount >= 2) || (flowDirection < 1 && posDirection === 0)) {
+							lakeX -= xMove;
+							if (lakeX < 0) {lakeX = (cellColumnCount-1);}
+							else if (lakeX >= cellColumnCount) {lakeX = 0;}
+							negDirection++;
+							yCount = 0;
+							posDirection = 0;
+						}
+						else {lakeY += yMove; yCount++;}
+					}
+					break;
+				case SWdist:
+					yMove = 1; xMove = -1;
+					while (blueCount < 1 && grid[lakeX][lakeY].color !== freshBlue1) {
+						if (grid[lakeX][lakeY].isCoast === true) {blueCount++;}
+						if (grid[lakeX][lakeY].isCoast === true) {grid[lakeX][lakeY].riverMouth = true;}
+						let riverNeighbor = 0;
+						if (lakeX === 0) {
+							if (grid[cellColumnCount-1][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX + 1][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY - 1].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY + 1].color === freshBlue1) {riverNeighbor++;}
+						}
+						else if (lakeX === (cellColumnCount-1)) {
+							if (grid[lakeX - 1][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[0][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY - 1].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY + 1].color === freshBlue1) {riverNeighbor++;}
+						}
+						else {
+							if (grid[lakeX - 1][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX + 1][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY - 1].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY + 1].color === freshBlue1) {riverNeighbor++;}
+						}
+						if (riverNeighbor >= 2) {blueCount = 1;}
+						grid[lakeX][lakeY].color = freshBlue1;
+						let flowDirection = Math.random();
+						if (flowDirection < 0.5) {
+							lakeY += yMove;
+							yCount++;
+						}
+						else if ((flowDirection < 0.83 && yCount >= 2) || (flowDirection < 0.83 && negDirection === 0)) {
+							lakeX += xMove;
+							if (lakeX < 0) {lakeX = (cellColumnCount-1);}
+							else if (lakeX >= cellColumnCount) {lakeX = 0;}
+							posDirection++;
+							yCount = 0;
+							negDirection = 0;
+						}
+						else if ((flowDirection < 1 && yCount >= 2) || (flowDirection < 1 && posDirection === 0)) {
+							lakeX -= xMove;
+							if (lakeX < 0) {lakeX = (cellColumnCount-1);}
+							else if (lakeX >= cellColumnCount) {lakeX = 0;}
+							negDirection++;
+							yCount = 0;
+							posDirection = 0;
+						}
+						else {lakeY += yMove; yCount++;}
+					}
+					break;
+				case Wdist:
+					yMove = 1; xMove = -1;
+					while (blueCount < 1 && grid[lakeX][lakeY].color !== freshBlue1) {
+						if (grid[lakeX][lakeY].isCoast === true) {blueCount++;}
+						if (grid[lakeX][lakeY].isCoast === true) {grid[lakeX][lakeY].riverMouth = true;}
+						let riverNeighbor = 0;
+						if (lakeX === 0) {
+							if (grid[cellColumnCount-1][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX + 1][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY - 1].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY + 1].color === freshBlue1) {riverNeighbor++;}
+						}
+						else if (lakeX === (cellColumnCount-1)) {
+							if (grid[lakeX - 1][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[0][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY - 1].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY + 1].color === freshBlue1) {riverNeighbor++;}
+						}
+						else {
+							if (grid[lakeX - 1][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX + 1][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY - 1].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY + 1].color === freshBlue1) {riverNeighbor++;}
+						}
+						if (riverNeighbor >= 2) {blueCount = 1;}
+						grid[lakeX][lakeY].color = freshBlue1;
+						let flowDirection = Math.random();
+						if (flowDirection < 0.66) {
+							lakeX += xMove;
+							if (lakeX < 0) {lakeX = (cellColumnCount-1);}
+							else if (lakeX >= cellColumnCount) {lakeX = 0;}
+							xCount++;
+							
+						}
+						else if ((flowDirection < 0.83 && xCount >= 2) || (flowDirection < 0.83 && negDirection === 0)) {
+							lakeY += yMove;
+							posDirection++;
+							xCount = 0;
+							negDirection = 0;
+						}
+						else if ((flowDirection < 1 && xCount >= 2) || (flowDirection < 1 && posDirection === 0)) {
+							lakeY -= yMove;
+							negDirection++;
+							xCount = 0;
+							posDirection = 0;
+						}
+						else {lakeY += yMove; yCount++;}
+					}
+					break;
+				case NWdist:
+					yMove = -1; xMove = -1;
+					while (blueCount < 1 && grid[lakeX][lakeY].color !== freshBlue1) {
+						if (grid[lakeX][lakeY].isCoast === true) {blueCount++;}
+						if (grid[lakeX][lakeY].isCoast === true) {grid[lakeX][lakeY].riverMouth = true;}
+						let riverNeighbor = 0;
+						if (lakeX === 0) {
+							if (grid[cellColumnCount-1][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX + 1][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY - 1].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY + 1].color === freshBlue1) {riverNeighbor++;}
+						}
+						else if (lakeX === (cellColumnCount-1)) {
+							if (grid[lakeX - 1][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[0][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY - 1].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY + 1].color === freshBlue1) {riverNeighbor++;}
+						}
+						else {
+							if (grid[lakeX - 1][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX + 1][lakeY].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY - 1].color === freshBlue1) {riverNeighbor++;}
+							if (grid[lakeX][lakeY + 1].color === freshBlue1) {riverNeighbor++;}
+						}
+						if (riverNeighbor >= 2) {blueCount = 1;}
+						grid[lakeX][lakeY].color = freshBlue1;
+						let flowDirection = Math.random();
+						if (flowDirection < 0.5) {
+							lakeY += yMove;
+							yCount++;
+						}
+						else if ((flowDirection < 0.83 && yCount >= 2) || (flowDirection < 0.83 && negDirection === 0)) {
+							lakeX += xMove;
+							if (lakeX < 0) {lakeX = (cellColumnCount-1);}
+							else if (lakeX >= cellColumnCount) {lakeX = 0;}
+							posDirection++;
+							yCount = 0;
+							negDirection = 0;
+						}
+						else if ((flowDirection < 1 && yCount >= 2) || (flowDirection < 1 && posDirection === 0)) {
+							lakeX -= xMove;
+							if (lakeX < 0) {lakeX = (cellColumnCount-1);}
+							else if (lakeX >= cellColumnCount) {lakeX = 0;}
+							negDirection++;
+							yCount = 0;
+							posDirection = 0;
+						}
+						else {lakeY += yMove; yCount++;}
+					}
+					break;
+			}
+			
+			riverPlaced = true;
+		}
+	}
+}
+
+function defineNeighbors(){	
+	for(c=0; c<cellColumnCount; c++) {
+		for(r=0; r<cellRowCount; r++) {
+			var cels = grid[c][r].neighbors;
+			switch(c) {
+			case 0:
+				cels.push(grid[cellColumnCount-1][r], grid[c+1][r]);
+				break;
+			case (cellColumnCount - 1):
+				cels.push(grid[c-1][r], grid[0][r]);
+				break;
+			default:
+				cels.push(grid[c-1][r], grid[c+1][r]);
+			}
+			switch(r) {
+			case 0:
+				cels.push(grid[c][r+1]);
+				break;
+			case (cellRowCount - 1):
+				cels.push(grid[c][r-1]);
+				break
+			default:
+				cels.push(grid[c][r-1], grid[c][r+1]);
+			
+			}
+		}
+	}	
+}
+
+function defineCoasts() {
+	let coastClone = JSON.parse(JSON.stringify(grid));
+	defineNeighbors();
+	for(c=0; c<cellColumnCount; c++) {
+		for(r=0; r<cellRowCount; r++) {
+			let oceanCount = 0;
+			if (r === 0) {
+				for (n = 0; n < 3; n++) {
+					if (grid[c][r].neighbors[n].color === blue && grid[c][r].color === green) {
+						oceanCount++;
+					}
+				}
+			}
+			else if (r === (cellRowCount - 1)) {
+				for (n = 0; n < 3; n++) {
+					if (grid[c][r].neighbors[n].color === blue && grid[c][r].color === green) {
+						oceanCount++;
+					}
+				}
+			}
+			else if (r > 0 && r < (cellRowCount - 1)){
+				for (n = 0; n < 4; n++) {
+					if (grid[c][r].neighbors[n].color === blue && grid[c][r].color === green) {
+						oceanCount++;
+					}
+				}
+			}
+			if (oceanCount >= 1) {coastClone[c][r].isCoast = true;}
+		}
+	}
+	grid = JSON.parse(JSON.stringify(coastClone));
+}
+
+function addNoise() {
+	let clone = JSON.parse(JSON.stringify(grid));
+	defineNeighbors();
+	for(c=0; c<cellColumnCount; c++) {
+		for(r=0; r<cellRowCount; r++) {
+			let greenNum = 0;
+			let freshBlueNum = 0;
+			let freshBlue1Num = 0;
+			if (r === 0) {
+				for (n = 0; n < 3; n++) {
+					if (grid[c][r].neighbors[n].color === green) {
+						greenNum++;
+					}
+					else if (grid[c][r].neighbors[n].color === freshBlue) {
+						freshBlueNum++;
+					}
+					else if (grid[c][r].neighbors[n].color === freshBlue1) {
+						freshBlue1Num++;
+					}
+				}
+			}
+			else if (r === (cellRowCount - 1)) {
+				for (n = 0; n < 3; n++) {
+					if (grid[c][r].neighbors[n].color === green) {
+						greenNum++;
+					}
+					else if (grid[c][r].neighbors[n].color === freshBlue) {
+						freshBlueNum++;
+					}
+					else if (grid[c][r].neighbors[n].color === freshBlue1) {
+						freshBlue1Num++;
+					}
+				}
+			}
+			else if (r > 0 && r < (cellRowCount - 1)){
+				for (n = 0; n < 4; n++) {
+					if (grid[c][r].neighbors[n].color === green) {
+						greenNum++;
+					}
+					else if (grid[c][r].neighbors[n].color === freshBlue) {
+						freshBlueNum++;
+					}
+					else if (grid[c][r].neighbors[n].color === freshBlue1) {
+						freshBlue1Num++;
+					}
+				}
+			}
+			if (greenNum > 2 && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && freshBlue1Num < 1) {
+				clone[c][r].color = green;
+			}
+			else if (greenNum > 0 && greenNum < 3 && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1 && freshBlue1Num < 1) {
+				var chance = Math.random();
+				if (chance < 0.9) {
+					clone[c][r].color = green;
+				}
+			}
+			if (freshBlueNum > 2) {
+				clone[c][r].color = freshBlue;
+			}
+			else if (freshBlueNum > 0 && freshBlueNum < 3) {
+				chance = Math.random();
+				if (chance < 0.95) {
+					clone[c][r].color = freshBlue;
+			}
+			}
+		}
+	}
+	grid = JSON.parse(JSON.stringify(clone));
+}
+
+function noOceanPuddles() {
+	let clone = JSON.parse(JSON.stringify(grid));
+	defineNeighbors();
+	for(c=0; c<cellColumnCount; c++) {
+		for(r=0; r<cellRowCount; r++) {
+			let greenNum = 0;
+			if (r === 0) {
+				for (n = 0; n < 3; n++) {
+					if (grid[c][r].neighbors[n].color === green) {
+						greenNum++;
+					}
+				}
+			}
+			else if (r === (cellRowCount - 1)) {
+				for (n = 0; n < 3; n++) {
+					if (grid[c][r].neighbors[n].color === green) {
+						greenNum++;
+					}
+				}
+			}
+			else if (r > 0 && r < (cellRowCount - 1)){
+				for (n = 0; n < 4; n++) {
+					if (grid[c][r].neighbors[n].color === green) {
+						greenNum++;
+					}
+				}
+			}
+			if (greenNum === 4) {
+				clone[c][r].color = green;
+			}
+		}
+	}
+	grid = JSON.parse(JSON.stringify(clone));
+}
+	
+function addMountains() {
+	let mountainsPlaced = false;
+	while (mountainsPlaced === false) {
+		let lakeX = Math.floor(Math.random() * (cellColumnCount));
+		let lakeY = Math.floor(Math.random() * (cellRowCount-10)+5);
+		if (grid[lakeX][lakeY].color === green) {
+			let directionX = (Math.floor(Math.random()*2)) == 1 ? 1 : -1;
+			let directionY = (Math.floor(Math.random()*2)) == 1 ? 1 : -1;
+			let rangeSize = Math.floor(Math.random() * 25) + 20;
+				for (let i = 0; i < rangeSize; i++) {
+					if (grid[lakeX][lakeY].color !== freshBlue && grid[lakeX][lakeY].color !== blue) {	
+						grid[lakeX][lakeY].color = white;
+					}
+					let flowDirection = Math.random();
+					if (flowDirection < 0.5) {
+						lakeY += directionY;
+						if (lakeY < 0) {lakeY = 0;}
+						if (lakeY >= cellRowCount) {lakeY = (cellRowCount-1);}
+					}
+					else if (flowDirection < 1) {
+						lakeX += directionX;
+						if (lakeX < 0) {lakeX = (cellColumnCount-1);}
+						if (lakeX >= cellColumnCount) {lakeX = 0;}
+					}
+				}
+			mountainsPlaced = true;
+		}
+	}
+}
+
+function enhanceMountains() {
+	let clone = JSON.parse(JSON.stringify(grid));
+	defineNeighbors();
+	for(c=0; c<cellColumnCount; c++) {
+		for(r=0; r<cellRowCount; r++) {
+			let whiteCount = 0;
+			if (r === 0) {
+				for (n = 0; n < 3; n++) {
+					if (grid[c][r].neighbors[n].color === white) {
+						whiteCount++;
+					}
+				}
+			}
+			else if (r === (cellRowCount - 1)) {
+				for (n = 0; n < 3; n++) {
+					if (grid[c][r].neighbors[n].color === white) {
+						whiteCount++;
+					}
+				}
+			}
+			else if (r > 0 && r < (cellRowCount - 1)){
+				for (n = 0; n < 4; n++) {
+					if (grid[c][r].neighbors[n].color === white) {
+						whiteCount++;
+					}
+				}
+			}
+			if (whiteCount > 0 && grid[c][r].color !== freshBlue && grid[c][r].color !== blue) {
+				let chance = Math.random();
+				if (chance < 0.80) {
+					clone[c][r].color = white;
+				}
+			}
+		}
+	}
+	grid = JSON.parse(JSON.stringify(clone));
+}
+
+function noMtnIslands() {
+	let clone = JSON.parse(JSON.stringify(grid));
+	defineNeighbors();
+	for(c=0; c<cellColumnCount; c++) {
+		for(r=0; r<cellRowCount; r++) {
+			let greenNum = 0;
+			if (r === 0) {
+				for (n = 0; n < 3; n++) {
+					if (grid[c][r].neighbors[n].color === white) {
+						greenNum++;
+					}
+				}
+			}
+			else if (r === (cellRowCount - 1)) {
+				for (n = 0; n < 3; n++) {
+					if (grid[c][r].neighbors[n].color === white) {
+						greenNum++;
+					}
+				}
+			}
+			else if (r > 0 && r < (cellRowCount - 1)){
+				for (n = 0; n < 4; n++) {
+					if (grid[c][r].neighbors[n].color === white) {
+						greenNum++;
+					}
+				}
+			}
+			if (greenNum === 4) {
+				clone[c][r].color = white;
+			}
+		}
+	}
+	grid = JSON.parse(JSON.stringify(clone));
+}
+
+function defineWaterAvail (windDirection) {
+	for(c=0; c<cellColumnCount; c++) {  
+		for(r=0; r<cellRowCount; r++) {
+			let Ncheck = false, NEcheck = false, Echeck = false, SEcheck = false, Scheck = false, SWcheck = false, Wcheck = false, NWcheck = false;
+			let Ndist = 0, NEdist = 0, Edist = 0, SEdist = 0, Sdist = 0, SWdist = 0, Wdist = 0, NWdist = 0;
+			let Nmtn = 1, NEmtn = 1, Emtn = 1, SEmtn = 1, Smtn = 1, SWmtn = 1, Wmtn = 1, NWmtn = 1;
+			let NdistRiver = 0, NEdistRiver = 0, EdistRiver = 0, SEdistRiver = 0, SdistRiver = 0, SWdistRiver = 0, WdistRiver = 0, NWdistRiver = 0;
+			let NdistLake = 0, NEdistLake = 0, EdistLake = 0, SEdistLake = 0, SdistLake = 0, SWdistLake = 0, WdistLake = 0, NWdistLake = 0;
+			let riverFound = false, lakeFound = false;
+			let cloneC = JSON.parse(JSON.stringify(c));
+			let cloneR = JSON.parse(JSON.stringify(r));
+			while (Ncheck === false) {
+				if (grid[c][r].color === green || grid[c][r].color === freshBlue || grid[c][r].color === freshBlue1 || grid[c][r].color === white) {
+					Ndist++;
+					r--;
+					if (r < 0) {break;}
+					if (grid[c][r].color === white) {Nmtn = 0.1;}
+					else if (grid[c][r].color === freshBlue1 && riverFound === false) {NdistRiver = JSON.parse(JSON.stringify(Ndist)); riverFound = true;}
+					else if (grid[c][r].color === freshBlue && lakeFound === false) {NdistLake = JSON.parse(JSON.stringify(Ndist)); lakeFound = true;}
+				}
+				else if (grid[c][r].color === blue) {
+					Ncheck = true;
+				}
+			}
+			riverFound = false; lakeFound = false;
+			c = JSON.parse(JSON.stringify(cloneC));
+			r = JSON.parse(JSON.stringify(cloneR));
+			while (Wcheck === false) {
+				if (grid[c][r].color === green || grid[c][r].color === freshBlue || grid[c][r].color === freshBlue1 || grid[c][r].color === white) {
+					Wdist++;
+					c--;
+					if (c < 0) {c = (cellColumnCount-1);}
+					if (grid[c][r].color === white) {Wmtn = 0.1;}
+					else if (grid[c][r].color === freshBlue1 && riverFound === false) {WdistRiver = JSON.parse(JSON.stringify(Wdist)); riverFound = true;}
+					else if (grid[c][r].color === freshBlue && lakeFound === false) {WdistLake = JSON.parse(JSON.stringify(Wdist)); lakeFound = true;}
+				}
+				else if (grid[c][r].color === blue) {
+					Wcheck = true;
+				}
+			}
+			riverFound = false; lakeFound = false;
+			c = JSON.parse(JSON.stringify(cloneC));
+			r = JSON.parse(JSON.stringify(cloneR));
+			while (Scheck === false) {
+				if (grid[c][r].color === green || grid[c][r].color === freshBlue || grid[c][r].color === freshBlue1 || grid[c][r].color === white) {
+					Sdist++;
+					r++;
+					if (r >= cellRowCount) {break;}
+					if (grid[c][r].color === white) {Smtn = 0.1;}
+					else if (grid[c][r].color === freshBlue1 && riverFound === false) {SdistRiver = JSON.parse(JSON.stringify(Sdist)); riverFound = true;}
+					else if (grid[c][r].color === freshBlue && lakeFound === false) {SdistLake = JSON.parse(JSON.stringify(Sdist)); lakeFound = true;}
+				}
+				else if (grid[c][r].color === blue) {
+					Scheck = true;
+				}
+			}
+			riverFound = false; lakeFound = false;
+			c = JSON.parse(JSON.stringify(cloneC));
+			r = JSON.parse(JSON.stringify(cloneR));
+			while (Echeck === false) {
+				if (grid[c][r].color === green || grid[c][r].color === freshBlue || grid[c][r].color === freshBlue1 || grid[c][r].color === white) {
+					Edist++;
+					c++;
+					if (c >= cellColumnCount) {c = 0;}
+					if (grid[c][r].color === white) {Emtn = 0.1;}
+					else if (grid[c][r].color === freshBlue1 && riverFound === false) {EdistRiver = JSON.parse(JSON.stringify(Edist)); riverFound = true;}
+					else if (grid[c][r].color === freshBlue && lakeFound === false) {EdistLake = JSON.parse(JSON.stringify(Edist)); lakeFound = true;}
+				}
+				else if (grid[c][r].color === blue) {
+					Echeck = true;
+				}
+			}
+			riverFound = false; lakeFound = false;
+			c = JSON.parse(JSON.stringify(cloneC));
+			r = JSON.parse(JSON.stringify(cloneR));
+			while (NEcheck === false) {
+				if (grid[c][r].color === green || grid[c][r].color === freshBlue || grid[c][r].color === freshBlue1 || grid[c][r].color === white) {
+					NEdist = parseFloat((NEdist + 1.4).toFixed(1));
+					r--;
+					c++;
+					if (c >= cellColumnCount) {c = 0;}
+					if (r < 0) {break;}
+					if (grid[c][r].color === white) {NEmtn = 0.1;}
+					else if (grid[c][r].color === freshBlue1 && riverFound === false) {NEdistRiver = JSON.parse(JSON.stringify(NEdist)); riverFound = true;}
+					else if (grid[c][r].color === freshBlue && lakeFound === false) {NEdistLake = JSON.parse(JSON.stringify(NEdist)); lakeFound = true;}
+				}
+				else if (grid[c][r].color === blue) {
+					NEcheck = true;
+				}
+			}
+			riverFound = false; lakeFound = false;
+			c = JSON.parse(JSON.stringify(cloneC));
+			r = JSON.parse(JSON.stringify(cloneR));
+			while (NWcheck === false) {
+				if (grid[c][r].color === green || grid[c][r].color === freshBlue || grid[c][r].color === freshBlue1 || grid[c][r].color === white) {
+					NWdist = parseFloat((NWdist + 1.4).toFixed(1));
+					r--;
+					c--;
+					if (c < 0) {c = (cellColumnCount-1);}
+					if (r < 0) {break;}
+					if (grid[c][r].color === white) {NWmtn = 0.1;}
+					else if (grid[c][r].color === freshBlue1 && riverFound === false) {NWdistRiver = JSON.parse(JSON.stringify(NWdist)); riverFound = true;}
+					else if (grid[c][r].color === freshBlue && lakeFound === false) {NWdistLake = JSON.parse(JSON.stringify(NWdist)); lakeFound = true;}
+				}
+				else if (grid[c][r].color === blue) {
+					NWcheck = true;
+				}
+			}
+			riverFound = false; lakeFound = false;
+			c = JSON.parse(JSON.stringify(cloneC));
+			r = JSON.parse(JSON.stringify(cloneR));
+			while (SEcheck === false) {
+				if (grid[c][r].color === green || grid[c][r].color === freshBlue || grid[c][r].color === freshBlue1 || grid[c][r].color === white) {
+					SEdist = parseFloat((SEdist + 1.4).toFixed(1));
+					r++;
+					c++;
+					if (c >= cellColumnCount) {c = 0;}
+					if (r >= cellRowCount) {break;}
+					if (grid[c][r].color === white) {SEmtn = 0.1;}
+					else if (grid[c][r].color === freshBlue1 && riverFound === false) {SEdistRiver = JSON.parse(JSON.stringify(SEdist)); riverFound = true;}
+					else if (grid[c][r].color === freshBlue && lakeFound === false) {SEdistLake = JSON.parse(JSON.stringify(SEdist)); lakeFound = true;}
+				}
+				else if (grid[c][r].color === blue) {
+					SEcheck = true;
+				}
+			}
+			riverFound = false; lakeFound = false;
+			c = JSON.parse(JSON.stringify(cloneC));
+			r = JSON.parse(JSON.stringify(cloneR));
+			while (SWcheck === false) {
+				if (grid[c][r].color === green || grid[c][r].color === freshBlue || grid[c][r].color === freshBlue1 || grid[c][r].color === white) {
+					SWdist = parseFloat((SWdist + 1.4).toFixed(1));
+					r++;
+					c--;
+					if (c < 0) {c = (cellColumnCount-1);}
+					if (r >= cellRowCount) {break;}
+					if (grid[c][r].color === white) {SWmtn = 0.1;}
+					else if (grid[c][r].color === freshBlue1 && riverFound === false) {SWdistRiver = JSON.parse(JSON.stringify(SWdist)); riverFound = true;}
+					else if (grid[c][r].color === freshBlue && lakeFound === false) {SWdistLake = JSON.parse(JSON.stringify(SWdist)); lakeFound = true;}
+				}
+				else if (grid[c][r].color === blue) {
+					SWcheck = true;
+				}
+			}
+			riverFound = false; lakeFound = false;
+			c = JSON.parse(JSON.stringify(cloneC));
+			r = JSON.parse(JSON.stringify(cloneR));
+			//console.log(c + " " + r);
+			//console.log(grid[c][r].water);
+			//RIVER AND LAKE ADJACENCY
+			if ((NdistRiver === 2 || NdistLake === 2) && (grid[c][r].color === white || grid[c][r].color === green)) {grid[c][r].water = 0.9;}
+			else if (NEdistRiver === 2.8 || NEdistLake === 2.8) {grid[c][r].water = 0.9;}
+			else if (NWdistRiver === 2.8 || NWdistLake === 2.8) {grid[c][r].water = 0.9;}
+			else if (WdistRiver === 2 || WdistLake === 2) {grid[c][r].water = 0.9;}
+			else if (EdistRiver === 2 || EdistLake === 2) {grid[c][r].water = 0.9;}
+			else if (SEdistRiver === 2.8 || SEdistLake === 2.8) {grid[c][r].water = 0.9;}
+			else if (SWdistRiver === 2.8 || SWdistLake === 2.8) {grid[c][r].water = 0.9;}
+			else if (SdistRiver === 2 || SdistLake === 2) {grid[c][r].water = 0.9;}
+			//console.log(grid[c][r].water);
+			
+			let Nwater = 0, NEwater = 0, Ewater = 0, SEwater = 0, Swater = 0, SWwater = 0, Wwater = 0, NWwater = 0;
+			
+			let distModifier = .75;
+			let windBonus = .935;
+			let oppositePenalty = .1;
+			let semiOppositePenalty = .2;
+			let perpendiculars = .45;
+			let slantedWind = .835;
+			
+			if (windDirection === "north") {
+				Nwater = (Math.pow(distModifier, Ndist) + ((1 - Math.pow(distModifier, Ndist)) * Math.pow(windBonus, Ndist))) * Nmtn;
+				NEwater = Math.pow(distModifier, NEdist) * slantedWind * NEmtn;
+				Ewater = Math.pow(distModifier, Edist) * perpendiculars * Emtn;
+				SEwater = Math.pow(distModifier, SEdist) * semiOppositePenalty * SEmtn;
+				Swater = Math.pow(distModifier, Sdist) * oppositePenalty * Smtn;
+				SWwater = Math.pow(distModifier, SWdist) * semiOppositePenalty * SWmtn;
+				Wwater = Math.pow(distModifier, Wdist) * perpendiculars * Wmtn;
+				NWwater = Math.pow(distModifier, NWdist) * slantedWind * NWmtn;
+			}
+			else if (windDirection === "west") {
+				Nwater = Math.pow(distModifier, Ndist) * perpendiculars * Nmtn;
+				NEwater = Math.pow(distModifier, NEdist) * semiOppositePenalty * NEmtn;
+				Ewater = Math.pow(distModifier, Edist) * oppositePenalty * Emtn;
+				SEwater = Math.pow(distModifier, SEdist) * semiOppositePenalty * SEmtn;
+				Swater = Math.pow(distModifier, Sdist) * perpendiculars * Smtn;
+				SWwater = Math.pow(distModifier, SWdist) * slantedWind * SWmtn;
+				Wwater = (Math.pow(distModifier, Wdist) + ((1 - Math.pow(distModifier, Wdist)) * Math.pow(windBonus, Wdist))) * Wmtn;
+				NWwater = Math.pow(distModifier, NWdist) * slantedWind * NWmtn;
+			}
+			else if (windDirection === "east") {
+				Nwater = Math.pow(distModifier, Ndist) * perpendiculars * Nmtn;
+				NEwater = Math.pow(distModifier, NEdist) * slantedWind * NEmtn;
+				Ewater = (Math.pow(distModifier, Edist) + ((1 - Math.pow(distModifier, Edist)) * Math.pow(windBonus, Edist))) * Emtn;
+				SEwater = Math.pow(distModifier, SEdist) * slantedWind * SEmtn;
+				Swater = Math.pow(distModifier, Sdist) * perpendiculars * Smtn;
+				SWwater = Math.pow(distModifier, SWdist) * semiOppositePenalty * SWmtn;
+				Wwater = Math.pow(distModifier, Wdist) * oppositePenalty * Wmtn;
+				NWwater = Math.pow(distModifier, NWdist) * semiOppositePenalty * NWmtn;
+			}
+			else if (windDirection === "south") {
+				Nwater = Math.pow(distModifier, Ndist) * oppositePenalty * Nmtn;
+				NEwater = Math.pow(distModifier, NEdist) * semiOppositePenalty * NEmtn;
+				Ewater = Math.pow(distModifier, Edist) * perpendiculars * Emtn;
+				SEwater = Math.pow(distModifier, SEdist) * slantedWind * SEmtn;
+				Swater = (Math.pow(distModifier, Sdist) + ((1 - Math.pow(distModifier, Sdist)) * Math.pow(windBonus, Sdist))) * Smtn;
+				SWwater = Math.pow(distModifier, SWdist) * slantedWind * SWmtn;
+				Wwater = Math.pow(distModifier, Wdist) * perpendiculars * Wmtn;
+				NWwater = Math.pow(distModifier, NWdist) * semiOppositePenalty * NWmtn;
+			}
+			else if (windDirection === "northwest") {
+				Nwater = Math.pow(distModifier, Ndist) * slantedWind * Nmtn;
+				NEwater = Math.pow(distModifier, NEdist) * perpendiculars *NEmtn;
+				Ewater = Math.pow(distModifier, Edist) * semiOppositePenalty * Emtn;
+				SEwater = Math.pow(distModifier, SEdist) * oppositePenalty * SEmtn;
+				Swater = Math.pow(distModifier, Sdist) * semiOppositePenalty * Smtn;
+				SWwater = Math.pow(distModifier, SWdist) * perpendiculars * SWmtn;
+				Wwater = Math.pow(distModifier, Wdist) * slantedWind * Wmtn;
+				NWwater = (Math.pow(distModifier, NWdist) + ((1 - Math.pow(distModifier, NWdist)) * Math.pow(windBonus, NWdist))) * NWmtn;
+			}
+			else if (windDirection === "northeast") {
+				Nwater = Math.pow(distModifier, Ndist) * slantedWind * Nmtn;
+				NEwater = (Math.pow(distModifier, NEdist) + ((1 - Math.pow(distModifier, NEdist)) * Math.pow(windBonus, NEdist))) * NEmtn;
+				Ewater = Math.pow(distModifier, Edist) * slantedWind * Emtn;
+				SEwater = Math.pow(distModifier, SEdist) * perpendiculars * SEmtn;
+				Swater = Math.pow(distModifier, Sdist) * semiOppositePenalty * Smtn;
+				SWwater = Math.pow(distModifier, SWdist) * oppositePenalty * SWmtn;
+				Wwater = Math.pow(distModifier, Wdist) * semiOppositePenalty * Wmtn;
+				NWwater = Math.pow(distModifier, NWdist) * perpendiculars * NWmtn;
+			}
+			else if (windDirection === "southwest") {
+				Nwater = Math.pow(distModifier, Ndist) * semiOppositePenalty * Nmtn;
+				NEwater = Math.pow(distModifier, NEdist) * oppositePenalty * NEmtn;
+				Ewater = Math.pow(distModifier, Edist) * semiOppositePenalty * Emtn;
+				SEwater = Math.pow(distModifier, SEdist) * perpendiculars * SEmtn;
+				Swater = Math.pow(distModifier, Sdist) * slantedWind * Smtn;
+				SWwater = (Math.pow(distModifier, SWdist) + ((1 - Math.pow(distModifier, SWdist)) * Math.pow(windBonus, SWdist))) * SWmtn;
+				Wwater = Math.pow(distModifier, Wdist) * slantedWind * Wmtn;
+				NWwater = Math.pow(distModifier, NWdist) * perpendiculars * NWmtn;
+			}
+			else if (windDirection === "southeast") {
+				Nwater = Math.pow(distModifier, Ndist) * semiOppositePenalty * Nmtn;
+				NEwater = Math.pow(distModifier, NEdist) * perpendiculars * NEmtn;
+				Ewater = Math.pow(distModifier, Edist) * slantedWind * Emtn;
+				SEwater = (Math.pow(distModifier, SEdist) + ((1 - Math.pow(distModifier, SEdist)) * Math.pow(windBonus, SEdist))) * SEmtn;
+				Swater = Math.pow(distModifier, Sdist) * slantedWind * Smtn;
+				SWwater = Math.pow(distModifier, SWdist) * perpendiculars * SWmtn;
+				Wwater = Math.pow(distModifier, Wdist) * semiOppositePenalty * Wmtn;
+				NWwater = Math.pow(distModifier, NWdist) * oppositePenalty * NWmtn;
+			}
+			
+			let waterSource = Math.max(Nwater, NEwater, Ewater, SEwater, Swater, SWwater, Wwater, NWwater);
+			
+			//FINAL RIVER & LAKE MODIFIERS
+			if (NdistLake === 3 || NEdistLake === 4.2 || EdistLake === 3 || SEdistLake === 4.2 || SdistLake === 3 || SWdistLake === 4.2 || WdistLake === 3 || NWdistLake === 4.2) {
+				waterSource = (waterSource + ((1 - waterSource) * .20));
+			}
+			else if (NdistLake === 4 || NEdistLake === 5.6 || EdistLake === 4 || SEdistLake === 5.6 || SdistLake === 4 || SWdistLake === 5.6 || WdistLake === 4 || NWdistLake === 5.6) {
+				waterSource = (waterSource + ((1 - waterSource) * .10));
+			}
+			
+			//EQUATOR/POLES SHIT
+			let precipMax = (waterSource + ((1-waterSource) * .05));
+			let precipMin = (waterSource * .15);
+			let precipRange = precipMax - precipMin;
+			let equatorR = cellRowCount/2, maxDist = cellRowCount/2;
+			let distanceToEQ = 0;
+			if (r >= equatorR) {distanceToEQ = r - equatorR;}
+			else if (r <= equatorR) {distanceToEQ = equatorR - r;}
+			grid[c][r].water = (precipMax - (precipRange * (distanceToEQ/maxDist)));
+			
+			if (grid[c][r].color === freshBlue || grid[c][r].color === freshBlue1 || grid[c][r].color === blue) {grid[c][r].water = 1}
+		}
+	}
+	averagePrecip();
+	defineHeat();
+}
+
+function defineHeat () {
+	for(c=0; c<cellColumnCount; c++) {
+		for(r=0; r<cellRowCount; r++) {
+			let heatMax = 90;
+			let heatMin = 30;
+			let heatRange = heatMax - heatMin;
+			let equatorR = cellRowCount/2, maxDist = cellRowCount/2;
+			let distanceToEQ = 0;
+			if (r >= equatorR) {distanceToEQ = r - equatorR;}
+			else if (r <= equatorR) {distanceToEQ = equatorR - r;}
+			let heatAvg = (heatMax - (heatRange * (distanceToEQ/maxDist)))
+			if (grid[c][r].color === white) {heatAvg -= 30;}
+			
+			let Ncheck = false, NEcheck = false, Echeck = false, SEcheck = false, Scheck = false, SWcheck = false, Wcheck = false, NWcheck = false;
+			let Ndist = 0, NEdist = 0, Edist = 0, SEdist = 0, Sdist = 0, SWdist = 0, Wdist = 0, NWdist = 0;
+			let cloneC = JSON.parse(JSON.stringify(c));
+			let cloneR = JSON.parse(JSON.stringify(r));
+			
+			while (Ncheck === false) {
+				if (grid[c][r].color === green || grid[c][r].color === freshBlue || grid[c][r].color === freshBlue1 || grid[c][r].color === white) {
+					Ndist++;
+					r--;
+					if (r < 0) {break;}
+				}
+				else if (grid[c][r].color === blue) {
+					Ncheck = true;
+				}
+			}
+			c = JSON.parse(JSON.stringify(cloneC));
+			r = JSON.parse(JSON.stringify(cloneR));
+			while (Wcheck === false) {
+				if (grid[c][r].color === green || grid[c][r].color === freshBlue || grid[c][r].color === freshBlue1 || grid[c][r].color === white) {
+					Wdist++;
+					c--;
+					if (c < 0) {c = (cellColumnCount-1);}
+				}
+				else if (grid[c][r].color === blue) {
+					Wcheck = true;
+				}
+			}
+			c = JSON.parse(JSON.stringify(cloneC));
+			r = JSON.parse(JSON.stringify(cloneR));
+			while (Scheck === false) {
+				if (grid[c][r].color === green || grid[c][r].color === freshBlue || grid[c][r].color === freshBlue1 || grid[c][r].color === white) {
+					Sdist++;
+					r++;
+					if (r >= cellRowCount) {break;}
+				}
+				else if (grid[c][r].color === blue) {
+					Scheck = true;
+				}
+			}
+			c = JSON.parse(JSON.stringify(cloneC));
+			r = JSON.parse(JSON.stringify(cloneR));
+			while (Echeck === false) {
+				if (grid[c][r].color === green || grid[c][r].color === freshBlue || grid[c][r].color === freshBlue1 || grid[c][r].color === white) {
+					Edist++;
+					c++;
+					if (c >= cellColumnCount) {c = 0;}
+				}
+				else if (grid[c][r].color === blue) {
+					Echeck = true;
+				}
+			}
+			c = JSON.parse(JSON.stringify(cloneC));
+			r = JSON.parse(JSON.stringify(cloneR));
+			while (NEcheck === false) {
+				if (grid[c][r].color === green || grid[c][r].color === freshBlue || grid[c][r].color === freshBlue1 || grid[c][r].color === white) {
+					NEdist = parseFloat((NEdist + 1.4).toFixed(1));
+					r--;
+					c++;
+					if (c >= cellColumnCount) {c = 0;}
+					if (r < 0) {break;}
+				}
+				else if (grid[c][r].color === blue) {
+					NEcheck = true;
+				}
+			}
+			c = JSON.parse(JSON.stringify(cloneC));
+			r = JSON.parse(JSON.stringify(cloneR));
+			while (NWcheck === false) {
+				if (grid[c][r].color === green || grid[c][r].color === freshBlue || grid[c][r].color === freshBlue1 || grid[c][r].color === white) {
+					NWdist = parseFloat((NWdist + 1.4).toFixed(1));
+					r--;
+					c--;
+					if (c < 0) {c = (cellColumnCount-1);}
+					if (r < 0) {break;}
+				}
+				else if (grid[c][r].color === blue) {
+					NWcheck = true;
+				}
+			}
+			c = JSON.parse(JSON.stringify(cloneC));
+			r = JSON.parse(JSON.stringify(cloneR));
+			while (SEcheck === false) {
+				if (grid[c][r].color === green || grid[c][r].color === freshBlue || grid[c][r].color === freshBlue1 || grid[c][r].color === white) {
+					SEdist = parseFloat((SEdist + 1.4).toFixed(1));
+					r++;
+					c++;
+					if (c >= cellColumnCount) {c = 0;}
+					if (r >= cellRowCount) {break;}
+				}
+				else if (grid[c][r].color === blue) {
+					SEcheck = true;
+				}
+			}
+			c = JSON.parse(JSON.stringify(cloneC));
+			r = JSON.parse(JSON.stringify(cloneR));
+			while (SWcheck === false) {
+				if (grid[c][r].color === green || grid[c][r].color === freshBlue || grid[c][r].color === freshBlue1 || grid[c][r].color === white) {
+					SWdist = parseFloat((SWdist + 1.4).toFixed(1));
+					r++;
+					c--;
+					if (c < 0) {c = (cellColumnCount-1);}
+					if (r >= cellRowCount) {break;}
+				}
+				else if (grid[c][r].color === blue) {
+					SWcheck = true;
+				}
+			}
+			c = JSON.parse(JSON.stringify(cloneC));
+			r = JSON.parse(JSON.stringify(cloneR));
+			let minDist = Math.min(Ndist, NEdist, Edist, SEdist, Sdist, SWdist, Wdist, NWdist);
+			let waterHalfRange = (1 - grid[c][r].water) * 85;
+			let distHalfRange = (1 - (Math.pow(.98, minDist))) * 85;
+			let finalRange = ((waterHalfRange * 2)+(distHalfRange * 2))/2;
+			let maxTempRange = 0;
+			if (grid[c][r].water > .75) {maxTempRange = (finalRange - (finalRange * grid[c][r].water));}
+			else if (grid[c][r].water <= .75) {maxTempRange = (finalRange - (finalRange * .75))}
+			if (grid[c][r].color !== blue) {
+				grid[c][r].maxTemp = Math.round(heatAvg + maxTempRange);
+				grid[c][r].minTemp = Math.round(grid[c][r].maxTemp - finalRange);
+				grid[c][r].avgTemp = Math.round((grid[c][r].maxTemp + grid[c][r].minTemp) / 2);
+			}
+			else if (grid[c][r].color === blue) {
+				grid[c][r].maxTemp = Math.round(heatAvg + 5);
+				grid[c][r].minTemp = Math.round(heatAvg - 5);
+				grid[c][r].avgTemp = Math.round(heatAvg);
+			}
+		}
+	}
+	averageHeat();
+	
+	globalAvgHigh = 0;
+	globalAvgLow = 100;
+	globalMaxHigh = 0;
+	globalMaxLow = 100;
+	globalMinHigh = 0;
+	globalMinLow = 100;
+	
+	for(c=0; c<cellColumnCount; c++) {
+		for(r=0; r<cellRowCount; r++) {
+			let cellAvg = Math.round((grid[c][r].maxTemp + grid[c][r].minTemp)/2);
+			if (cellAvg > globalAvgHigh) {globalAvgHigh = cellAvg;}
+			else if (cellAvg < globalAvgLow) {globalAvgLow = cellAvg;}
+			if (grid[c][r].maxTemp > globalMaxHigh) {globalMaxHigh = grid[c][r].maxTemp;}
+			else if (grid[c][r].maxTemp < globalMaxLow) {globalMaxLow = grid[c][r].maxTemp;}
+			if (grid[c][r].minTemp > globalMinHigh) {globalMinHigh = grid[c][r].minTemp;}
+			else if (grid[c][r].minTemp < globalMinLow) {globalMinLow = grid[c][r].minTemp;}
+		}
+	}
+}
+
+document.addEventListener("click", changeMap, false);
+let regularMap = true;
+function changeMap(e) {
+	if (e && regularMap === true) {drawPrecipMap(); regularMap = false;}
+	else if (e && regularMap === false) {drawBiomes(); regularMap = true;}
+}
+
+function averageHeat() {
+	for(let i = 0; i < 2; i++) {
+		let heatClone = JSON.parse(JSON.stringify(grid));
+		defineNeighbors();
+		for(c=0; c<cellColumnCount; c++) {
+			for(r=0; r<cellRowCount; r++) {
+				if (r === 0 || r === (cellRowCount - 1)) {
+					let maxTempAvg = grid[c][r].maxTemp;
+					let minTempAvg = grid[c][r].minTemp;
+					for (n = 0; n < 3; n++) {
+						maxTempAvg += grid[c][r].neighbors[n].maxTemp;
+						heatClone[c][r].maxTemp = Math.round(maxTempAvg/4);
+						minTempAvg += grid[c][r].neighbors[n].minTemp;
+						heatClone[c][r].minTemp = Math.round(minTempAvg/4);
+						heatClone[c][r].avgTemp = Math.round((heatClone[c][r].maxTemp + heatClone[c][r].minTemp)/2);
+					}
+				}
+				else if (r > 0 && r < (cellRowCount - 1)){
+					let maxTempAvg = grid[c][r].maxTemp;
+					let minTempAvg = grid[c][r].minTemp;
+					for (n = 0; n < 4; n++) {
+						maxTempAvg += grid[c][r].neighbors[n].maxTemp;
+						heatClone[c][r].maxTemp = Math.round(maxTempAvg/5);
+						minTempAvg += grid[c][r].neighbors[n].minTemp;
+						heatClone[c][r].minTemp = Math.round(minTempAvg/5);
+						heatClone[c][r].avgTemp = Math.round((heatClone[c][r].maxTemp + heatClone[c][r].minTemp)/2);
+					}
+				}
+			}
+		}
+	grid = JSON.parse(JSON.stringify(heatClone));
+	}
+}
+
+function averagePrecip() {
+	for(let i = 0; i < 2; i++) {
+		let precipClone = JSON.parse(JSON.stringify(grid));
+		defineNeighbors();
+		for(c=0; c<cellColumnCount; c++) {
+			for(r=0; r<cellRowCount; r++) {
+				if (r === 0 || r === (cellRowCount - 1)) {
+					let precipAvg = grid[c][r].water;
+					for (n = 0; n < 3; n++) {
+						precipAvg += grid[c][r].neighbors[n].water;
+						precipClone[c][r].water = (precipAvg/4);
+					}
+				}
+				else if (r > 0 && r < (cellRowCount - 1)){
+					let precipAvg = grid[c][r].water;
+					for (n = 0; n < 4; n++) {
+						precipAvg += grid[c][r].neighbors[n].water;
+						precipClone[c][r].water = (precipAvg/5);
+					}
+				}
+			}
+		}
+	grid = JSON.parse(JSON.stringify(precipClone));
+	}
+	for(c = 0; c < cellColumnCount; c++) {
+		for(r = 0; r < cellRowCount; r++) {
+			if (grid[c][r].color === freshBlue || grid[c][r].color === freshBlue1 || grid[c][r].color === blue) {grid[c][r].water = 1}
+		}
+	}
+}
+
+document.addEventListener("keydown", keyDown, false);
+	
+function keyDown(e) {
+	if (e.keyCode == 68) {		//d
+	
+		ctx.clearRect(0, 600, canvas.width, canvas.height);
+		
+		if (windComesFrom === "west") {
+			defineWaterAvail("northwest");
+			drawPrecipMap();
+			windComesFrom = "northwest";
+			ctx.clearRect(0, 581, 135, 600);
+			ctx.font = "12px Arial";
+			ctx.fillStyle = "#FFFFFF";
+			ctx.fillText("(D)irection of Wind: SE", 5, 593);
+		}
+		else if (windComesFrom === "northwest") {
+			defineWaterAvail("north");
+			drawPrecipMap();
+			windComesFrom = "north";
+			ctx.clearRect(0, 581, 135, 600);
+			ctx.font = "12px Arial";
+			ctx.fillStyle = "#FFFFFF";
+			ctx.fillText("(D)irection of Wind: S", 5, 593);
+		}
+		else if (windComesFrom === "north") {
+			defineWaterAvail("northeast");
+			drawPrecipMap();
+			windComesFrom = "northeast";
+			ctx.clearRect(0, 581, 135, 600);
+			ctx.font = "12px Arial";
+			ctx.fillStyle = "#FFFFFF";
+			ctx.fillText("(D)irection of Wind: SW", 5, 593);
+		}
+		else if (windComesFrom === "northeast") {
+			defineWaterAvail("east");
+			drawPrecipMap();
+			windComesFrom = "east";
+			ctx.clearRect(0, 581, 135, 600);
+			ctx.font = "12px Arial";
+			ctx.fillStyle = "#FFFFFF";
+			ctx.fillText("(D)irection of Wind: W", 5, 593);
+		}
+		else if (windComesFrom === "east") {
+			defineWaterAvail("southeast");
+			drawPrecipMap();
+			windComesFrom = "southeast";
+			ctx.clearRect(0, 581, 135, 600);
+			ctx.font = "12px Arial";
+			ctx.fillStyle = "#FFFFFF";
+			ctx.fillText("(D)irection of Wind: NW", 5, 593);
+		}
+		else if (windComesFrom === "southeast") {
+			defineWaterAvail("south");
+			drawPrecipMap();
+			windComesFrom = "south";
+			ctx.clearRect(0, 581, 135, 600);
+			ctx.font = "12px Arial";
+			ctx.fillStyle = "#FFFFFF";
+			ctx.fillText("(D)irection of Wind: N", 5, 593);
+		}
+		else if (windComesFrom === "south") {
+			defineWaterAvail("southwest");
+			drawPrecipMap();
+			windComesFrom = "southwest";
+			ctx.clearRect(0, 581, 135, 600);
+			ctx.font = "12px Arial";
+			ctx.fillStyle = "#FFFFFF";
+			ctx.fillText("(D)irection of Wind: NE", 5, 593);
+		}
+		else if (windComesFrom === "southwest") {
+			defineWaterAvail("west");
+			drawPrecipMap();
+			windComesFrom = "west";
+			ctx.clearRect(0, 581, 135, 600);
+			ctx.font = "12px Arial";
+			ctx.fillStyle = "#FFFFFF";
+			ctx.fillText("(D)irection of Wind: E", 5, 593);
+		}
+		
+		ctx.beginPath();
+		ctx.rect(7, 600, 14, 14);
+		ctx.fillStyle = '#00ffff';   
+		ctx.fill();
+		ctx.closePath();
+		ctx.font = "12px Arial";
+		ctx.fillStyle = "#FFFFFF";
+		ctx.fillText("100%", 25, 612);
+		
+		ctx.beginPath();
+		ctx.rect(85, 600, 14, 14);
+		ctx.fillStyle = '#00ff00';  
+		ctx.fill();
+		ctx.closePath();
+		ctx.font = "12px Arial";
+		ctx.fillStyle = "#FFFFFF";
+		ctx.fillText("67%", 103, 612);
+		
+		ctx.beginPath();
+		ctx.rect(163, 600, 14, 14);
+		ctx.fillStyle = '#ffff00'; 
+		ctx.fill();
+		ctx.closePath();
+		ctx.font = "12px Arial";
+		ctx.fillStyle = "#FFFFFF";
+		ctx.fillText("33%", 181, 612);
+		
+		ctx.beginPath();
+		ctx.rect(241, 600, 14, 14);
+		ctx.fillStyle = '#ff0000'; 
+		ctx.fill();
+		ctx.closePath();
+		ctx.font = "12px Arial";
+		ctx.fillStyle = "#FFFFFF";
+		ctx.fillText("0%", 259, 612);
+	}
+	if (e.keyCode == 69) {     		//e
+		drawMap();
+		ctx.clearRect(0, 600, canvas.width, canvas.height);
+	}
+	if (e.keyCode == 66) {			//b
+		let tundra = '#00FFFF';
+		let desert = '#ff4300';
+		let temperateGrassland = '#72ff00';
+		let savanna = '#ffc700';
+		let taiga = '#00aaff';
+		let temperateDeciduous = '#00cc00';
+		let tropicalSeasonalRain = '#00ff80';
+		let temperateRainforest = '#00825f';
+		let rainforest = '#006006';
+		
+		drawBiomes();
+		
+		ctx.clearRect(0, 600, canvas.width, canvas.height);
+		
+		ctx.beginPath();
+		ctx.rect(7, 600, 14, 14);
+		ctx.fillStyle = rainforest;   
+		ctx.fill();
+		ctx.closePath();
+		ctx.font = "12px Arial";
+		ctx.fillStyle = "#FFFFFF";
+		ctx.fillText("Tropical Rainforest", 25, 612);
+		
+		ctx.beginPath();
+		ctx.rect(142, 600, 14, 14);
+		ctx.fillStyle = tropicalSeasonalRain;  
+		ctx.fill();
+		ctx.closePath();
+		ctx.font = "12px Arial";
+		ctx.fillStyle = "#FFFFFF";
+		ctx.fillText("Tropical Seasonal Rainforest", 160, 612);
+		
+		ctx.beginPath();
+		ctx.rect(332, 600, 14, 14);
+		ctx.fillStyle = savanna; 
+		ctx.fill();
+		ctx.closePath();
+		ctx.font = "12px Arial";
+		ctx.fillStyle = "#FFFFFF";
+		ctx.fillText("Savanna", 350, 612);
+		
+		ctx.beginPath();
+		ctx.rect(414, 600, 14, 14);
+		ctx.fillStyle = desert; 
+		ctx.fill();
+		ctx.closePath();
+		ctx.font = "12px Arial";
+		ctx.fillStyle = "#FFFFFF";
+		ctx.fillText("Desert", 434, 612);
+		
+		ctx.beginPath();
+		ctx.rect(487, 600, 14, 14);
+		ctx.fillStyle = taiga; 
+		ctx.fill();
+		ctx.closePath();
+		ctx.font = "12px Arial";
+		ctx.fillStyle = "#FFFFFF";
+		ctx.fillText("Taiga", 505, 612);
+		
+		ctx.beginPath();
+		ctx.rect(550, 600, 14, 14);
+		ctx.fillStyle = tundra; 
+		ctx.fill();
+		ctx.closePath();
+		ctx.font = "12px Arial";
+		ctx.fillStyle = "#FFFFFF";
+		ctx.fillText("Tundra", 568, 612);
+		
+		ctx.beginPath();
+		ctx.rect(507, 620, 14, 14);
+		ctx.fillStyle = white; 
+		ctx.fill();
+		ctx.closePath();
+		ctx.font = "12px Arial";
+		ctx.fillStyle = "#FFFFFF";
+		ctx.fillText("Alpine", 525, 632);
+		
+		ctx.beginPath();
+		ctx.rect(7, 620, 14, 14);
+		ctx.fillStyle = temperateRainforest;   
+		ctx.fill();
+		ctx.closePath();
+		ctx.font = "12px Arial";
+		ctx.fillStyle = "#FFFFFF";
+		ctx.fillText("Temperate Rainforest", 25, 632);
+		
+		ctx.beginPath();
+		ctx.rect(158, 620, 14, 14);
+		ctx.fillStyle = temperateDeciduous;  
+		ctx.fill();
+		ctx.closePath();
+		ctx.font = "12px Arial";
+		ctx.fillStyle = "#FFFFFF";
+		ctx.fillText("Temperate Deciduous Forest", 176, 632);
+		
+		ctx.beginPath();
+		ctx.rect(348, 620, 14, 14);
+		ctx.fillStyle = temperateGrassland; 
+		ctx.fill();
+		ctx.closePath();
+		ctx.font = "12px Arial";
+		ctx.fillStyle = "#FFFFFF";
+		ctx.fillText("Temperate Grasslands", 368, 632);
+	}
+	if (e.keyCode == 87) {			//w
+		drawPrecipMap();
+		
+		ctx.clearRect(0, 600, canvas.width, canvas.height);
+		
+		ctx.beginPath();
+		ctx.rect(7, 600, 14, 14);
+		ctx.fillStyle = '#00ffff';   
+		ctx.fill();
+		ctx.closePath();
+		ctx.font = "12px Arial";
+		ctx.fillStyle = "#FFFFFF";
+		ctx.fillText("100%", 25, 612);
+		ctx.beginPath();
+		ctx.rect(85, 600, 14, 14);
+		ctx.fillStyle = '#00ff00';  
+		ctx.fill();
+		ctx.closePath();
+		ctx.font = "12px Arial";
+		ctx.fillStyle = "#FFFFFF";
+		ctx.fillText("67%", 103, 612);
+		ctx.beginPath();
+		ctx.rect(163, 600, 14, 14);
+		ctx.fillStyle = '#ffff00'; 
+		ctx.fill();
+		ctx.closePath();
+		ctx.font = "12px Arial";
+		ctx.fillStyle = "#FFFFFF";
+		ctx.fillText("33%", 181, 612);
+		ctx.beginPath();
+		ctx.rect(241, 600, 14, 14);
+		ctx.fillStyle = '#ff0000'; 
+		ctx.fill();
+		ctx.closePath();
+		ctx.font = "12px Arial";
+		ctx.fillStyle = "#FFFFFF";
+		ctx.fillText("0%", 259, 612);
+	}
+	if (e.keyCode == 82) {			//r
+		drawMaxRangeMap();
+		
+		ctx.clearRect(0, 600, canvas.width, canvas.height);
+		
+		ctx.beginPath();
+		ctx.rect(7, 600, 14, 14);
+		ctx.fillStyle = '#00ffff';   
+		ctx.fill();
+		ctx.closePath();
+		ctx.font = "12px Arial";
+		ctx.fillStyle = "#FFFFFF";
+		ctx.fillText("Stable Temperatures", 25, 612);
+		
+		ctx.beginPath();
+		ctx.rect(152, 600, 14, 14);
+		ctx.fillStyle = '#00ff00';  
+		ctx.fill();
+		ctx.closePath();
+		ctx.font = "12px Arial";
+		ctx.fillStyle = "#FFFFFF";
+		ctx.fillText("Light Fluctuation", 170, 612);
+		
+		ctx.beginPath();
+		ctx.rect(274, 600, 14, 14);
+		ctx.fillStyle = '#ffff00'; 
+		ctx.fill();
+		ctx.closePath();
+		ctx.font = "12px Arial";
+		ctx.fillStyle = "#FFFFFF";
+		ctx.fillText("Moderate Fluctuation", 292, 612);
+		
+		ctx.beginPath();
+		ctx.rect(421, 600, 14, 14);
+		ctx.fillStyle = '#ff0000'; 
+		ctx.fill();
+		ctx.closePath();
+		ctx.font = "12px Arial";
+		ctx.fillStyle = "#FFFFFF";
+		ctx.fillText("Extreme Fluctuation", 439, 612);
+	}
+	if (e.keyCode == 65) {			//a
+		drawAvgTempMap();
+		
+		ctx.clearRect(0, 600, canvas.width, canvas.height);
+		
+		ctx.beginPath();
+		ctx.rect(7, 600, 14, 14);
+		ctx.fillStyle = '#00ffff';   
+		ctx.fill();
+		ctx.closePath();
+		ctx.font = "12px Arial";
+		ctx.fillStyle = "#FFFFFF";
+		ctx.fillText(globalAvgLow + "°F", 25, 612);
+		
+		ctx.beginPath();
+		ctx.rect(85, 600, 14, 14);
+		ctx.fillStyle = '#00ff00';  
+		ctx.fill();
+		ctx.closePath();
+		ctx.font = "12px Arial";
+		ctx.fillStyle = "#FFFFFF";
+		ctx.fillText(Math.round(((globalAvgHigh-globalAvgLow) * .33) + globalAvgLow) + "°F", 103, 612);
+		
+		ctx.beginPath();
+		ctx.rect(163, 600, 14, 14);
+		ctx.fillStyle = '#ffff00'; 
+		ctx.fill();
+		ctx.closePath();
+		ctx.font = "12px Arial";
+		ctx.fillStyle = "#FFFFFF";
+		ctx.fillText(Math.round(((globalAvgHigh-globalAvgLow) * .67) + globalAvgLow) + "°F", 181, 612);
+		
+		ctx.beginPath();
+		ctx.rect(241, 600, 14, 14);
+		ctx.fillStyle = '#ff0000'; 
+		ctx.fill();
+		ctx.closePath();
+		ctx.font = "12px Arial";
+		ctx.fillStyle = "#FFFFFF";
+		ctx.fillText(globalAvgHigh + "°F", 259, 612);
+	}
+	if (e.keyCode == 76) {			//l
+		drawMinTempMap();
+		
+		ctx.clearRect(0, 600, canvas.width, canvas.height);
+		
+		ctx.beginPath();
+		ctx.rect(7, 600, 14, 14);
+		ctx.fillStyle = '#00ffff';   
+		ctx.fill();
+		ctx.closePath();
+		ctx.font = "12px Arial";
+		ctx.fillStyle = "#FFFFFF";
+		ctx.fillText(globalMinLow + "°F", 25, 612);
+		
+		ctx.beginPath();
+		ctx.rect(85, 600, 14, 14);
+		ctx.fillStyle = '#00ff00';  
+		ctx.fill();
+		ctx.closePath();
+		ctx.font = "12px Arial";
+		ctx.fillStyle = "#FFFFFF";
+		ctx.fillText(Math.round(((globalMinHigh-globalMinLow) * .33) + globalMinLow) + "°F", 103, 612);
+		
+		ctx.beginPath();
+		ctx.rect(163, 600, 14, 14);
+		ctx.fillStyle = '#ffff00'; 
+		ctx.fill();
+		ctx.closePath();
+		ctx.font = "12px Arial";
+		ctx.fillStyle = "#FFFFFF";
+		ctx.fillText(Math.round(((globalMinHigh-globalMinLow) * .67) + globalMinLow) + "°F", 181, 612);
+		
+		ctx.beginPath();
+		ctx.rect(241, 600, 14, 14);
+		ctx.fillStyle = '#ff0000'; 
+		ctx.fill();
+		ctx.closePath();
+		ctx.font = "12px Arial";
+		ctx.fillStyle = "#FFFFFF";
+		ctx.fillText(globalMinHigh + "°F", 259, 612);
+	}
+	if (e.keyCode == 72) {			//h
+		drawMaxTempMap();
+		
+		ctx.clearRect(0, 600, canvas.width, canvas.height);
+		
+		ctx.beginPath();
+		ctx.rect(7, 600, 14, 14);
+		ctx.fillStyle = '#00ffff';   
+		ctx.fill();
+		ctx.closePath();
+		ctx.font = "12px Arial";
+		ctx.fillStyle = "#FFFFFF";
+		ctx.fillText(globalMaxLow + "°F", 25, 612);
+		
+		ctx.beginPath();
+		ctx.rect(85, 600, 14, 14);
+		ctx.fillStyle = '#00ff00';  
+		ctx.fill();
+		ctx.closePath();
+		ctx.font = "12px Arial";
+		ctx.fillStyle = "#FFFFFF";
+		ctx.fillText(Math.round(((globalMaxHigh-globalMaxLow) * .33) + globalMaxLow) + "°F", 103, 612);
+		
+		ctx.beginPath();
+		ctx.rect(163, 600, 14, 14);
+		ctx.fillStyle = '#ffff00'; 
+		ctx.fill();
+		ctx.closePath();
+		ctx.font = "12px Arial";
+		ctx.fillStyle = "#FFFFFF";
+		ctx.fillText(Math.round(((globalMaxHigh-globalMaxLow) * .67) + globalMaxLow) + "°F", 181, 612);
+		
+		ctx.beginPath();
+		ctx.rect(241, 600, 14, 14);
+		ctx.fillStyle = '#ff0000'; 
+		ctx.fill();
+		ctx.closePath();
+		ctx.font = "12px Arial";
+		ctx.fillStyle = "#FFFFFF";
+		ctx.fillText(globalMaxHigh + "°F", 259, 612);
+	}
+}
+
+function drawToolbar() {
+	ctx.font = "12px Arial";
+	ctx.fillStyle = "#FFFFFF";
+	ctx.fillText("(E)arth View", 5, 578);
+	ctx.fillText("(D)irection of Wind: E", 5, 593);
+	ctx.fillText("(B)iomes", 165, 578);
+	ctx.fillText("(W)ater Availability", 165, 593);
+	ctx.fillText("(R)ange of Temperature", 300, 578);
+	ctx.fillText("(A)verage Temperature", 300, 593);
+	ctx.fillText("(H)ighest Temperature", 465, 578);
+	ctx.fillText("(L)owest Temperature", 465, 593);
+}
+
+function findMtnPercent() {
+	let landCount = 0;
+	let mtnCount = 0;
+	let waterCount = 0;
+	let tropicalCount = 0;
+	let desertCount = 0;
+	let freshCount = 0;
+	for(c=0; c<cellColumnCount; c++) {
+		for(r=0; r<cellRowCount; r++) {
+			if (grid[c][r].color === green) {landCount++;}
+			else if (grid[c][r].color === white) {mtnCount++;}
+			else if (grid[c][r].color === blue || grid[c][r].color === freshBlue || grid[c][r].color === freshBlue1) {waterCount++;}
+			if (grid[c][r].color === freshBlue || grid[c][r].color === freshBlue1) {freshCount++;}
+			//if (grid[c][r].water > .8 && grid[c][r].color !== blue && grid[c][r].color !== freshBlue && grid[c][r].color !== freshBlue1) {tropicalCount++;}
+			//else if (grid[c][r].water < .15) {desertCount++;}
+		}
+	}
+	console.log("The land of Earth is " + Math.round(((landCount/(landCount + mtnCount))*100)) + "% flatland and " + Math.round(((mtnCount/(landCount+mtnCount))*100)) + "% mountains");
+	console.log("The total coverage of Earth is " + Math.round(((waterCount/(waterCount+landCount+mtnCount))*100)) + "% water and " + Math.round((((mtnCount+landCount)/(mtnCount+landCount+waterCount))*100)) + "% land.");
+	console.log("Freshwater to land ratio: " + (freshCount/(freshCount+landCount+mtnCount))*100 + "%");
+	//console.log("The tropical biomes compromise " + Math.round((tropicalCount/(landCount + mtnCount))*100) + "% of Earth's surface.");
+	//console.log("The desert biomes compromise " + Math.round((desertCount/(landCount + mtnCount))*100) + "% of Earth's surface.");
+}
+
+let Species = function(){this.name = "The First One"; this.size = 1; this.isLithotroph = true; this.isOsmoregulator = true; this.osmoNumber = 3; this.migration = 0; this.currentMigration = 0; this.maxSpeed = 0; this.home = "saltwater"; this.idealTemp = [80, 100]; this.totalNumber = 100;}
+let firstSpecies = new Species();
+function findFood(speciesSpeed) {return (0.01 + (speciesSpeed.maxSpeed * 0.005))}
+
+function placeInitialSpecies() {
+	let startX = Math.floor(Math.random() * (cellColumnCount));
+	let startY = Math.floor(cellRowCount/2);
+	let xMod = 0;
+	while (grid[startX + xMod][startY].color !== blue) {
+	xMod++;
+	if (startX + xMod >= cellColumnCount) {startX = 0; xMod = 0;}
+	}
+	grid[startX + xMod][startY].speciesPresent.push(firstSpecies);
+	console.log(grid[startX + xMod][startY]);
+	console.log((startX + xMod) + " " + startY);
+}
+
+
+//let exSpecies = {name: "test", prop1: "p1", prop2: "p2"}
+//let fuckThis = {sPresent: [exSpecies]}
+//function fuckFunc() {fuckThis.sPresent.forEach(function(obj){if(obj.name === "test"){console.log(obj.name);}})}
+
+function evolve() {
+	var clone = JSON.parse(JSON.stringify(grid));
+	for(c=0; c<cellColumnCount; c++) {
+		for(r=0; r<cellRowCount; r++) {
+			if (grid[c][r].speciesPresent.length > 0) {
+				let L = grid[c][r].speciesPresent.length;
+				let maxTemp = grid[c][r].maxTemp;
+				let minTemp = grid[c][r].minTemp;
+				//console.log("maxtemp " + maxTemp + " mintemp " + minTemp + " L " + L + " C " + c + " R " + r + " clone " + clone[c][r].maxTemp + " clonemin " + clone[c][r].minTemp);
+				for(l=0; l<L; l++) {
+					let tempDifHigh = (grid[c][r].maxTemp - grid[c][r].speciesPresent[l].idealTemp[1]);     //CALCULATING NEXT POP LEVEL
+					if (tempDifHigh < 0) {tempDifHigh = 0;}
+					let tempDifLow = (grid[c][r].speciesPresent[l].idealTemp[0] - grid[c][r].minTemp);
+					if (tempDifLow < 0) {tempDifLow = 0;}
+					let tempDif = tempDifHigh + tempDifLow;
+					if (tempDif > 10) {tempDif = 10;}
+					//console.log(tempDifHigh + " " + tempDifLow + " " + tempDif);
+					//console.log("c " + c + " r " + r);
+					let nextPopNum = (1000000000000 * findFood(grid[c][r].speciesPresent[l])  * (5 - grid[c][r].speciesPresent[l].osmoNumber) / 100) * (1 - (tempDif/10));
+					//console.log(nextPopNum);
+					let totalNum = grid[c][r].speciesPresent[l].totalNumber;
+					//console.log(totalNum);
+					
+					if (nextPopNum >= totalNum) {   //if nextpop is 100 and totalnum is 99, make sure that it caps at 100 and doesn't double to 198
+						clone[c][r].speciesPresent[l].currentMigration += grid[c][r].speciesPresent[l].migration;
+						if (grid[c][r].color === blue || grid[c][r].color === freshBlue || grid[c][r].color === freshBlue1) {
+							clone[c][r].speciesPresent[l].currentMigration += 10
+						}																						//EVERYTHING UP TO HERE FUNCTIONING
+						if (clone[c][r].speciesPresent[l].currentMigration >= 10) {
+							clone[c][r].speciesPresent[l].currentMigration %= 10;
+							
+							let migratePop = Math.round(grid[c][r].speciesPresent[l].totalNumber * 0.5);
+							let growPop = Math.round(grid[c][r].speciesPresent[l].totalNumber * 1.5);
+							//console.log('migratePop ' + migratePop + " growPop " + growPop);
+							clone[c][r].speciesPresent[l].totalNumber += growPop;
+							console.log(clone[c][r].speciesPresent[l].totalNumber);
+							let viableNeighborNum = 0;
+							let viableNeighborArray = [];
+							if (r > 0 && r < (cellRowCount - 1) && c > 0 && c < (cellColumnCount - 1)) {
+								if (grid[c+1][r].color === blue) {viableNeighborNum++; viableNeighborArray.push(clone[c+1][r]);}
+								if (grid[c+1][r+1].color === blue) {viableNeighborNum++; viableNeighborArray.push(clone[c+1][r+1]);}
+								if (grid[c+1][r-1].color === blue) {viableNeighborNum++; viableNeighborArray.push(clone[c+1][r-1]);}
+								if (grid[c-1][r].color === blue) {viableNeighborNum++; viableNeighborArray.push(clone[c-1][r]);}
+								if (grid[c-1][r+1].color === blue) {viableNeighborNum++; viableNeighborArray.push(clone[c-1][r+1]);}
+								if (grid[c-1][r-1].color === blue) {viableNeighborNum++; viableNeighborArray.push(clone[c-1][r-1]);}
+								if (grid[c][r+1].color === blue) {viableNeighborNum++; viableNeighborArray.push(clone[c][r+1]);}
+								if (grid[c][r-1].color === blue) {viableNeighborNum++; viableNeighborArray.push(clone[c][r-1]);}
+							}
+							//console.log("viableNeighborNum " + viableNeighborNum + " viableNeighborArray vvv ")
+							//console.log(viableNeighborArray); 
+							
+							//else if (r === 0)
+							//else if (r >= cellRowCount)
+							let migratePopFinal = 0;
+							if (viableNeighborNum > 0) {migratePopFinal = Math.round(migratePop/viableNeighborNum);}
+							//console.log("viaNeiNum " + viableNeighborNum + " MigratePop " + migratePop + " migratePopFinal " + migratePopFinal);
+							let rayLength = viableNeighborArray.length;
+							//console.log(rayLength);  }}}}}}
+							if (r > 0 && r < (cellRowCount - 1) && c > 0 && c < (cellColumnCount - 1)) {
+								for (n = 0; n < rayLength; n++) {
+									/*/function fuckingWork(){viableNeighborArray[n].speciesPresent.forEach(function(obj){if(obj.name === "The First One"){return true;}})}
+									if (viableNeighborArray[n].speciesPresent.length > 0) {
+									if (viableNeighborArray[n].speciesPresent[0].name === "The First One") {
+									
+								//	fuckThis.sPresent.forEach(function(obj){if(obj.name === "test"){console.log(obj.name);}}
+									
+										function findSpecies() {return grid[c][r].speciesPresent[l]}
+									
+										let targetSpecies = viableNeighborArray[n].speciesPresent.findIndex(findSpecies);
+										viableNeighborArray[n].speciesPresent[0].totalNumber += migratePopFinal;
+										console.log(migratePopFinal);
+									}
+									}*/
+									if (!viableNeighborArray[n].speciesPresent.includes(grid[c][r].speciesPresent[l])) {
+										viableNeighborArray[n].speciesPresent.push(grid[c][r].speciesPresent[l]);
+										
+										function findSpecies() {return grid[c][r].speciesPresent[l]}
+										
+										let targetSpecies = viableNeighborArray[n].speciesPresent.findIndex(findSpecies);
+										viableNeighborArray[n].speciesPresent[targetSpecies].totalNumber = 0;
+										viableNeighborArray[n].speciesPresent[targetSpecies].totalNumber += migratePopFinal;
+									}
+								}
+							}
+						}
+					}        }}}}
+					/*else if (nextPopNum < totalNum) {	
+						grid[c][r].speciesPresent[l].currentMigration += grid[c][r].speciesPresent[l].migration;
+						if (grid[c][r].color === blue || grid[c][r].color === freshBlue || grid[c][r].color === freshBlue1) {
+							grid[c][r].speciesPresent[l].currentMigration += 10
+						}
+						if (grid[c][r].speciesPresent[l].currentMigration >= 10) {
+							grid[c][r].speciesPresent[l].currentMigration %= 10;
+							
+							let migratePop = Math.round(nextPopNum * 0.25);
+							let growPop = Math.round(nextPopNum * 0.75);
+							grid[c][r].speciesPresent[l].totalNumber += growPop;
+						}
+					}
+				}
+			}
+		}
+	}*/
+	grid = JSON.parse(JSON.stringify(clone));
+}
+
+/*Size (energy gained from consuming it probably equal to size), Energy required to reproduce (equal to size of organism), 
+Energy consumed per tick (function of it’s size and movement, also subtract # for osmoregulation
+(this is replaced with water efficiency in multiceullar orgs)), ability to find food (multiplied by its movement), 
+oxygen, use/reaction/required levels (4% is the variance of healthy tolerance in humans), movement speed,  water need, 
+temperature tolerance (greater difference between current and preferred temperatures = more ATP spent)
+*/
+
+function watDistCalc() {
+	let waterAvail = 1;
+	for (let i = 0; i < 51; i++) {
+		waterAvail *= 0.985;
+		if (i % 5 === 0) {console.log(i + ": " + waterAvail);}
+		else {console.log(waterAvail);}
+	}
+}
+//watDistCalc();
+
+
+initialGridDrawer();
+smallIslandMaker();
+smallIslandMaker();
+smallIslandMaker();
+smallIslandMaker();
+smallIslandMaker();
+smallIslandMaker();
+smallIslandMaker();
+smallIslandMaker();
+smallIslandMaker();
+smallIslandMaker();
+mediumIslandMaker();
+mediumIslandMaker();
+mediumIslandMaker();
+mediumIslandMaker();
+mediumIslandMaker();
+bigIslandMaker();
+bigIslandMaker();
+bigIslandMaker();
+bigIslandMaker();
+bigIslandMaker();
+bigIslandMaker();
+bigIslandMaker();
+bigIslandMaker();
+bigIslandMaker();
+addLake();
+addLake();
+addLake();
+addNoise();
+noOceanPuddles();
+defineCoasts();
+addMountains();
+addMountains();
+addMountains();
+addMountains();
+addMountains();
+addMountains();
+addMountains();
+addMountains();
+enhanceMountains();
+noMtnIslands();
+addRiver();
+addRiver();
+addRiver();
+addRiver();
+addRiver();
+addRiver();
+addRiver();
+addRiver();
+addRiver();
+addRiver();
+addRiver();
+addRiver();
+addRiver();
+defineWaterAvail("west");
+//drawMap();
+findMtnPercent();
+drawToolbar();
+placeInitialSpecies();
+drawMap();
+//LISTS
+
+/*
+---PLANTS---
+TREES
+["Acacia", "Spruce", "Mahogany", "Rosewood", "Silk Tree", "Alder", "Palm", "Almond", "Devil's Walkingstick", "Apple", "Apricot", "Ash", "Aspen", "Avocado", "Balsa", "Banana", "Beech", "Bismark Palm", "Mangrove", "Blackbead", "Bloodwood", "Cotton Tree", "Cottonwood", "Boojum", "Nut Tree", "Bristlecone", "Bullet Tree", "Bushwillow", "Buttonwood", "Cacao", "Bay Laurel", "Pepperwood", "Canary Wood", "Candlenut", "Cashew", "Rainbow Shower Tree", "Cedar", "Cherry", "Chestnut", "Wine Palm", "Tree", "Umbrella Tree", "Lilac Tree", "Cypress", "Cinnamon", "Citron", "Citrus", "Coconut", "Cork Tree", "Paradise Nut", "Plum", "Redwood", "Willow", "Dogwood", "Elder Berry", "Elm", "Eucalyptus", "Fig", "Fir", "Foxglove", "Foxtail", "Sequoia", "Orange", "Grapefruit", "Cogwood", "Guava", "Copperwood", "Gumtree", "Hawthorn", "Hazel", "Hemlock", "Hickory", "Pecan", "Holly", "Winterberry", "Hornbeam", "Buckeye", "Fern Tree", "Juniper Tree", "Lancewood", "Lemon", "Lime", "Mandarin", "Tangerine", "Mango", "Maple", "Mesquite", "Rowan", "Mulberry", "Nectarine", "Nutmeg", "Oak", "Oil Tree", "Olive", "Orchid", "Crabwood", "Peach", "Pear", "Peppermint", "Ironwood", "Pine", "Pineapple", "Pistachio", "Poplar", "Rhododendron", "Sassafras", "Sumac", "Sweetgun", "Sycamore", "Tasmanian Tree", "Teak", "Nettle Tree", "Dart Tree", "Walnut", "Witch Hazel", "Yew", "Yucca", "Grape"]
+
+FLOWERS
+["Lily", "Thistle", "Amaryllis", "Baby's Breath", "Bellflower", "Bleeding Heart", "Throatwort", "Carnation", "Rose", "Daffodil", "Primrose", "Flame Tip", "Forget Me Not", "Foxglove", "Goldenrod", "Hyacinth", "Iris", "Lady's Mantle", "Larkspur", "Lavender", "Lilac", "Marigold", "Orchid", "Mums", "Peony", "Snapdragon", "Sugarbush", "Sunflower", "Sweet Pea", "Daisy", "Tulip", "Windflower", "Flamingo Flower", "Granny's Bonnet", "Milkweed", "Violet", "Blazing Star", "Firecracker", "Buttercup", "Poppy", "Cardinal Flower", "Chrysanthemum", "Clover", "Crocus", "Dahlia", "Daphne", "Delphinium", "Euphorbia", "Flax", "Freesia", "Marigold", "Fuschia", "Gardenia", "Geranium", "Gladiolus", "Goldenrod", "Heather", "Heliotrope", "Hibiscus", "Lunaria", "Honeysuckle", "Hydrangea", "Jasmine",  "Lady's Slipper", "Lotus", "Magnolia", "Morning Glory", "Nemesia", "Pansy", "Petunia", "Pointsettia", "Sage", "Sun Drop", "Tiger Flower", "Creeper", "Wallflower", "Waterlily", "Honeycup", "Flower"]
+
+OTHER PLANTS
+["Liverwort", "Waterwort", "Sickle Moss", "Haircap Moss", "Star Moss", "Wide Leaf Moss", "Bristle Moss", "Thread Moss", "Thyme Moss", "Carpet Moss", "Water Moss", "Brook Moss", "Silk Moss", "Ribbed Bog Moss", "Peat Moss", "Maidenhair Fern", "Bird's Nest Fern", "Club Moss", "Old World Fern", "Lady Fern", "Moonwort", "Parsley Fern", "Bladderfern", "Buckler Fern", "Oak Fern", "Fern", "Bristle Fern", "Whisk Fern", "Shield Fern", "Feather Moss", "Juniper Bush", "Chain Fern", "Climbing Fern", "Hanging Fern", "Water Clover Fern", "Horsetail", "Grass", "Barley", "Bristle Grass", "Crab Grass", "Fountain Grass", "Hair Grass", "Oat Grass", "Reed Grass", "Wheat Grass", "Maize", "Corn", "Rye Grass", "Needle Grass", "Lemon Grass", "Rice", "Reed", "Beet", "Onion", "Carrot", "Parsnip", "Potato", "Radish", "Rutabaga", "Turnip", "Broccoli", "Celery", "Rhubarb", "Asparagus", "Lima Beans", "Pea", "Pumpkin", "Eggplant", "Cucumber", "Lettuce", "Parsley", "Cabbage", "Cauliflower", "Sagebrush", "Aloe", "Leadwort", "Milkwort", "Firethorn", "Bramble", "Pagoda Bush", "Pearl Bush", "Bush", "Moss", "Bean", "Nettle"]
+
+PLANT ADJECTIVES
+["Yellow", "Blue", "Azure", "Red", "Crimson", "Ebony", "Scarlet", "Copper", "Emerald", "Ruby", "Sapphire", "Rose", "Cerulean", "Viridian", "Jade", "Golden", "Silver", "Coral", "Imperial", "Vermillion", "Wild", "Winter", "Spring", "Autumn", "Summer", "Snow", "Queen's", "King's", "Royal", "Persian", "Himalayan", "Andean", "Misty Mountain", "Rocky Mountain", "Siberian", "Arctic", "Desert", "Meadow", "Cliff", "Flaming", "Dragon", "Ghost", "Rubber", "Locust", "Spindle", "Purple", "Orange", "Green", "Oriental", "Moon", "Sweet", "Wax", "Dawn", "Poison", "Stinging", "Mandarin", "Swamp", "Marsh", "White", "Midnight", "Obsidian", "Black", "Dorado", "Spider", "Mystic", "Lunar", "Solar", "Prairie", "Alpine", "Witch's", "Monarch", "Tangled", "Aquatic", "Creeping", "Dwarf", "Titan", "Giant", "Baby", "Pygmy", "Exotic", "Hardy", "Wild", "Colossal", "Miniature", "Mammoth", "Verdant", "Hanging", "Climbing", "Ancient", "Primeval", "Wavy", "Winding", "Lucky", "Sticky", "Smooth", "Rough", "Silky", "Radiant", "Regal", "Pungent", "Pink", "Pale", "Oily", "Juicy", "Icy", "Hairy", "Shadow", "Night", "Frost", "Rainbow", "Mithril", "Lothlorien", "Ash Mountain", "Fire Mountain", "Iron Hills", "Black Hills", "Red Mountain", "Blue Mountain", "Dead Marsh", "Shire", "Black Marsh", "Stony Field", "Valley", "Field", "Plains", "Canyon", "Forest", "Jungle", "Highlands", "Plateau", "Steppe", "Korhal", "Mar Sara", "Tarsonis", "Zerus", "Dark", "Diablo", "Gerudo", "Zora", "Hylian", "Goron", "Death Mountain", "Lost Woods", "Kokiri", "Riverside", "Riverbank", "Cloaked", "Moonlight", "Emperor", "Olympian", "Pharaoh", "Gloomy", "Common", "Maori", "Kamchatka", "Goliath", "Painted", "Orinoco", "Old World", "Tibetan", "New World", "Sri Lankan", "Fiji", "Coloradan", "Minnesotan", "Lazuli", "Greater", "Lesser", "Gilded", "Ivory", "Guardian", "Sentinel", "Magi", "Magician's", "Shaman", "Void", "Voodoo"]
+
+---AQUATIC ANIMALS---
+BASIC AQUATIC ANIMALS
+["Sponge", "Glass Sponge", "Bone Sponge", "Tube Sponge", "Vase Sponge", "Branching Sponge", "Barrel Sponge", "Comb Jellies", "Flowered Anemone", "Cloaked Anemone", "Branching Anemone", "Bulb Anemone", "Tentacle Anemone", "Rock Anemone", "Reef Anemone", "Carpet Anemone", "Anemone", "Jewel Anemone", "Sea Rod Coral", "Sea Pen Coral", "Star Coral", "Blade Coral", "Coral", "Pillar Coral", "Finger Coral", "Brain Coral", "Sheet Coral", "Hydroid", "Sea Nettle Jellyfish", "Jellyfish", "Moonlight Jellyfish", "Box Jellyfish", "Lagoon Jellyfish", "Lion's Mane Jellyfish", "Man'o'War Jellyfish", "Sand Jellyfish", "Flatworm", "Sea Worm", "Leech", "Water Worm", "Flukeworm", "Tapeworm", "Beard Worm", "Ribbon Worm", "Sea Snail", "Sea Slug", "Trilobyte", "Conch Snail", "Bay Scallop", "Scallop", "Clam", "Swan Mussel", "Mussel", "Wedgemussel", "Cockle", "Oyster", "Clam", "Ammonite", "Jaw Worm", "Tongue Worm", "Horsehair Worm", "Sea Scorpion", "Water Spider", "Barnacle", "Ribbed Barnacle", "Coral Shrimp", "Shrimp", "Mantis Shrimp", "Reef Shrimp", "Anemone Shrimp", "Monkey Shrimp", "Sand Hopper", "Krill", "Bubble Krill", "Brine Shrimp", "Prawn", "Water Flee", "Sea Lily", "Sea Cucumber", "Urchin", "Sea Urchin", "Sand Dollar", "Brittle Star", "Sea Star", "Starfish", "Lamprey", 
+
+NOT QUITE AS BASIC AQUATIC ANIMALS
+["Flamboyant Cuttlefish", "Cuttlefish", "Nautilus", "Emperor Nautilus", "Ringed Octopus", "Blanket Octopus", "Coconut Octopus", "Benthic Octopus", "Octopus", "Reef Squid", "Squid", "Reef Octopus", "Colossal Squid", "Vampire Squid", "Horseshoe Crab", "Megalodon", "Kraken", "Scylla", "Nymph", "Hydra", "Water Dragon", "Water Golem", "Urchin Crab", "Coral Crab", "Reef Crab", "Lobster", "Reef Lobster", "Porcelain Crab", "Fiddler Crab", "Rock Lobster", "Crab", "Flathead Lobster", "Flat Rock Crab", "Crayfish", "Hagfish", "Spookfish", "Wobbegong", "Hammerhead Shark", "Sand Shark", "Shark", "Reef Shark", "Sawfish", "Ray", "Stingray", "Electric Ray", "Manta Ray", "Reedfish", "Ropefish", "Paddlefish", "Sturgeon", "Yangtze Sturgeon", "Yangtze Dolphin", "Adriatic Sturgeon", "Bowfin", "Mooneye Fish", "Bone Fish", "Moray Eel", "Eel", "Shortfinned Eel", "Electric Eel", "Knifefish", "Sawtooth Eel", "Anchovy", "Herring", "Wolf Herring", "Longfin Herring", "Dogtooth Herring", "Bream", "Goldfish", "Comet Goldfish", "Pearlscale Goldfish", "Tamasaba Goldfish", "Shiner Minnow", "Minnow", "Silverjaw Minnow", "Piranha", "Redeye Piranha", "Catfish", "Channel Catfish", "Flathead Catfish", "Electric Catfish", "Salmon", "Sockeye Salmon", "Chinook Salmon",  "Trout", "Flathead Trout", "Sea Trout", "Pike", "Lanternfish", "Ribbonfish", "Monkfish", "Anglerfish", "Sea Toad", "Batfish", "Seadevil", "Warty Seadevil", "Cod", "Whalefish", "Seahorse", "Longnose Seahorse", "False Eye Seahorse", "Pufferfish", "Blowfish", "Flatfish", "Flounder", "Halibut", "Firefish", "Stingfish", "Scorpion Fish", "Bass", "Sea Bass", "Goby", "Mudskipper", "Perch", "Mackerel", "Blacksail Mackerel", "Shark Mackerel", "Coelacanth", "Sea Cow", "Manatee", "Dugong", "Whale", "Humpback Whale", "Sperm Whale", "Beluga Whale", "Beaked Whale", "Bottlenose Dolphin", "Dolphin", "Shortbeaked Dolphin", "Spinner Dolphin", "Porpoise", "Spectacled Porpoise", "Seal", "Sea Lion", "Fur Seal", "Monk Seal", "Harbor Seal", "Harp Seal", "Leopard Seal", "Walrus"]
+
+---LAND ANIMALS---
+ANIMAL ADJECTIVES (BOTH AQUATIC AND LAND)
+["Mimic", "Styxian", "Pharaoh", "Reaper", "Vampire", "Pseudo", "Recluse", "Wandering", "Pirate", "Soldier", "Hermit", "Marbled", "Harlequin", "Clown", "Mud", "Gorgonion", "Candy", "Assassin", "Bronze", "Brass", "Killer", "Angel", "Requiem", "Blood", "Cutthroat", "Galapagos", "Veiled", "Speckled", "Freckled", "Masked", "Lucifer", "Spectacled", "Yellow", "Blue", "Azure", "Red", "Crimson", "Ebony", "Scarlet", "Copper", "Emerald", "Ruby", "Sapphire", "Rose", "Cerulean", "Viridian", "Jade", "Golden", "Silver", "Coral", "Imperial", "Vermillion", "Wild", "Winter", "Spring", "Autumn", "Summer", "Snow", "Queen's", "King's", "Royal", "Persian", "Himalayan", "Andean", "Misty Mountain", "Rocky Mountain", "Siberian", "Arctic", "Desert", "Meadow", "Cliff", "Flaming", "Dragon", "Ghost", "Rubber", "Locust", "Purple", "Orange", "Green", "Oriental", "Moon", "Sweet", "Wax", "Dawn", "Poison", "Stinging", "Mandarin", "Swamp", "Marsh", "White", "Midnight", "Obsidian", "Black", "Dorado", "Spider", "Mystic", "Lunar", "Solar", "Prairie", "Alpine", "Witch's", "Monarch", "Creeping", "Dwarf", "Titan", "Giant", "Baby", "Pygmy", "Exotic", "Hardy", "Wild", "Colossal", "Miniature", "Mammoth", "Climbing", "Ancient", "Primeval", "Lucky", "Smooth", "Rough", "Silky", "Radiant", "Regal", "Pungent", "Pink", "Pale", "Oily", "Icy", "Hairy", "Shadow", "Night", "Frost", "Rainbow", "Mithril", "Lothlorien", "Ash Mountain", "Fire Mountain", "Iron Hills", "Black Hills", "Red Mountain", "Blue Mountain", "Dead Marsh", "Shire", "Black Marsh", "Stony Field", "Valley", "Field", "Plains", "Canyon", "Forest", "Jungle", "Highlands", "Plateau", "Steppe", "Korhal", "Mar Sara", "Tarsonis", "Zerus", "Dark", "Diablo", "Gerudo", "Zora", "Hylian", "Goron", "Death Mountain", "Lost Woods", "Kokiri", "Riverside", "Riverbank", "Cloaked", "Moonlight", "Emperor", "Olympian", "Pharaoh", "Gloomy", "Common", "Maori", "Kamchatka", "Goliath", "Painted", "Orinoco", "Old World", "Tibetan", "New World", "Sri Lankan", "Fiji", "Brown", "Elusive", "Spotted", "Striped", "Rogue", "Clouded", "Polar", "Coloradan", "Minnesotan", "Lazuli", "Rusty", "Greater", "Lesser", "Gilded", "Ivory", "Warrior", "Guardian", "Sentinel", "Magi", "Magician's", "Shaman", "Hunter", "Void", "Voodoo"
+
+BASIC LAND ANIMALS
+["Worm", "Earthworm", "Ragworm", "Nematode", "Roundworm", "Tardigrade", "Chigger", "Mite", "Tick", "Spider", "Tailless Scorpion", "Scorpion", "Fat Tailed Scorpion", "Big Claw Scorpion", "Termite", "Black Legged Tick", "Military Wasp", "Wood Tick", "Daddy Long Legs", "Tarantula", "Huntsman Spider", "Widow Spider", "Jumping Spider", "Trapdoor Spider", "Orb Weaver Spider", "Millipede", "Centipede", "Bark Centipede", "Cockroach", "Aphid", "Moth", "Wasp", "Paper Wasp", "Bug", "Bamboo Moth", "Butterfly", "Lice", "Beetle", "Honey Bee", "Bumble Bee", "Bee", "Caterpillar", "Fuzzy Caterpillar", "Cicada", "Cricket", "Earwig", "Grasshopper", "Locust", "Fly", "Fruit Fly", "Dragonfly", "Horse Fly", "Hornet", "Grub", "Louse", "Katydid", "Scarab", "Sand Scarab", "Mosquito", "Weevil", "Praying Mantis", "Tortoise Beetle", "Ant", "Wooly Caterpillar", "Ant", "Carpenter Ant", "Bullet Ant", "Weaver Ant", "Redwood Ant", "Electric Ant", "Nightcrawler",
+
+NOT QUITE AS BASIC ANIMALS
+["Banshee", "Basilisk", "Centaur", "Chimera", "Cockatrice", "Cyclops", "Dragon", "Goblin", "Gnome", "Golem", "Griffin", "Imp", "Manticore", "Minotaur", "Ogre", "Pegasus", "Phoenix", "Satyr", "Thunderbird", "Unicorn", "Tyrannosaurus", "Brachiosaurus", "Diplodocus, "Apatosaurus", "Triceratops", "Pentaceratops", "Velociraptor", "Pyroraptor", "Titanosaurus", "Ankylosaurus", "Iguanodon", "Stegosaurus", "Archaeopteryx", "Allosaurus", "Brontosaurus", "Astrodon", "Atlasaurus", "Diabloceratops", "Megalosaurus", "Megaraptor", "Microraptor", "Saturnalia", "Spinosaurus", "Titanoceratops", "Vulcanodon", "Pterodactyl", "Phillip", "Colin", "Frog", "Toad", "Screeching Frog", "Squeaker Frog", "Glass Frog", "Firebelly Toad", "Spadefoot Toad", "Tomato Frog", "Mossy Toad", "Torrent Frog", "Cane Toad", "Salamander", "Hellbender Salamander", "Mudpuppy", "Olm", "Siren Salamander", "Newt", "Crested Newt", "Crocodile Newt", "Turtle", "Pancake Turtle", "Tortoise", "Sea Turtle", "Snapping Turtle", "Diamondback Turtle", "Tuatara", "Komodo Dragon", "Gecko", "Monitor", "Chameleon", "Iguana", "Panther Chameleon", "Rhinoceros Iguana", "Lizard", "Frilled Lizard", "Bearded Dragon", "Crested Gecko", "Skink", "Crocodile Skink", "Gila Monster", "Spectacled Crocodile", "Crocodile", "Alligator", "Slendersnouted Alligator", "Broadsnouted Crocodile", "Pipe Snake", "Snake", "Boa", "Python", "Viper", "Cobra", "Anaconda", "Tree Boa", "Adder", "Pit Viper", "Garter Snake", "Kingsnake", "Rattlesnake", "Mamba", "Puff Adder", "Bushsnake", "Copperhead Snake", "Cottonmouth Snake", "Diamondback Rattlesnake", "Sidewinder", "Bush Viper", "Bamboo Viper", "Ostrich", "Rhea", "Kiwi", "Cassowary", "Emu", "Mute Swan", "Trumpeter Swan", "Swan", "Duck", "Ring Necked Duck", "Magpie", "Magpie Goose", "Pigeon", "Homing Pigeon", "Fantail Pigeon", "Dove", "Mourning Dove", "Turtle Dove", "Quail Dove", "Sandgrouse", "Crane", "Crowned Crane", "Whooping Crane", "Flamingo", "Turkey", "Brush Turkey", "Quail", "Partridge", "Peafowl", "Pheasant", "Peacock", "Cheer Pheasant", "Grouse", "Nighthawk", "Hummingbird", "Crowned Hummingbird", "Broad Tailed Hummingbird", "Roadrunner", "Cuckoo", "Lizard Cuckoo", "Vulture", "Condor", "Buzzard", "Osprey", "Falcon", "Peregrine Falcon", "Kestrel", "Fox Kestrel", "Eagle", "Crowned Eagle", "Bald Eagle", "Harpy Eagle", "Harpy", "Hawk", "War Hawk", "Sparrowhawk", "Goshawk", "Griffin Hawk", "Stork", "Openbill Stork", "Owl", "Horned Owl", "Screech Owl", "Elf Owl", "Quetzal", "Kingfisher", "Toucan", "Spot Billed Toucan", "Macaw", "Woodpecker", "Downy Woodpecker", "Crowned Woodpecker", "Crowned Quetzal", "Thrush", "Wren", "Bowerbird", "Songbird", "Oriole", "Mockingbird", "Rockfowl", "Titbirds", "Chickadees", "Warbler", "Lark", "Swallow", "Sparrow", "Finch", "Crow", "Raven", "Jay", "Cardinal", "Parrot", "Cockatoo", "Boobie", "Penguin", "Loon", "Pelican", "Stork", "Albatross", "Heron", "Seagull", "Platypus", "Echidna", "Tasmanian Tiger", "Bandicoot", "Kangaroo", "Wallaby", "Koala", "Possum", "Wombat", "Tasmanian Devil", "Mole", "Shrew", "Elephant", "Aardvark", "Anteater", "Sloth", "Armadillo", "Pangolin", "Cat", "Sabre Toothed Cat", "Hyena", "Mongoose", "Wolf", "Meerkat", "Bengal Tiger", "Tiger", "Lion", "Jaguar", "Leopard", "Ocelot", "Lynx", "Bobcat", "Cheetah", "Cougar", "Bear", "Sloth Bear", "Polar Bear", "Panda", "Coyote", "Jackal", "Wild Dog", "Fox", "Fennec Fox", "Skunk", "Raccoon", "Weasel", "Badger", "Otter", "Ferret", "Mink", "Stoat", "Wolverine", "MissingNo", "Horse", "Donkey", "Tapir", "Zebra", "Mule", "Rhinoceros", "Pig", "Hippotamus", "Camel", "Alpaca", "Llama", "Deer", "Giraffe", "Antelope", "Sheep", "Goat", "Cattle", "Bat", "Hedgehog", "Chimpanzee", "Gorilla", "Orangutan", "Gibbon", "Tarsier", "Lemur", "Monkey", "Macaque", "Baboon", "Mandrill", "Spider Monkey", "Marmoset", "Tamarin", "Capuchin", "Howler Monkey", "Hare", "Rabbit", "Jackalope", "Jackrabbit", "Porcupine", "Guinea Pig", "Chinchilla", "Chinchilla Rat", "Capybara", "Squirrel", "Beaver", "Mouse", "Rat", "Gopher", "Chipmunk", "Kangaroo Rat", "Jumping Mouse"]
+*/
+
+
+
+</script>
+
+</body>
+</html>
+
+
+
