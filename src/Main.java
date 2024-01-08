@@ -3,7 +3,10 @@ import java.awt.*;
 
 public class Main extends JFrame{
     private final int WIDTH = 1060;
-    private final int HEIGHT = 700;
+    private final int HEIGHT = 775;
+    private JTextArea textArea;
+    private static Grid gameGrid;
+    private static Main frame = new Main();
 
     public Main() {
         setPreferredSize(new Dimension(WIDTH, HEIGHT));
@@ -31,14 +34,22 @@ public class Main extends JFrame{
         theKeyListener.setFocusable(true);
         add(theKeyListener);
 
-        MouseListenerClass theMouseListener = new MouseListenerClass();
+        MouseListenerClass theMouseListener = new MouseListenerClass(this);
         this.addMouseListener(theMouseListener);
         theMouseListener.setFocusable(true);
         add(theMouseListener);
-    }
 
-    private static Grid gameGrid;
-    private static Main frame = new Main();
+        textArea = new JTextArea(5, 20);
+        textArea.setEditable(false);
+        textArea.setBackground(Color.BLACK);
+        textArea.setForeground(Color.WHITE);
+        JScrollPane scrollPane = new JScrollPane(textArea);
+        scrollPane.setPreferredSize(new Dimension(400, 100));
+        add(scrollPane, BorderLayout.SOUTH);
+    }
+    public void updateTextArea(String text) {
+        textArea.append(text + "\n"); // Append new text with a newline
+    }
 
     public static Grid getGameGrid(){
         return gameGrid;
