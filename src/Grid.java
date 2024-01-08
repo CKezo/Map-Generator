@@ -47,7 +47,6 @@ public class Grid extends JPanel{
     private boolean avgTempFlag = false;
     private String windComesFrom;
     private int mtnCount, tundraCount, desertCount, temperateGrassCount, savannaCount, taigaCount, temperateDeciduousCount, tropicSeasonalCount, temperateRainCount, rainforestCount, oceanCount, freshwaterCount;
-
     public Grid() {
         setLayout(null);
         for (int c = 0; c < cellColumnCount; c++) {
@@ -2513,6 +2512,7 @@ public class Grid extends JPanel{
         }
     }
     public void drawBiomes() {
+        StringBuilder output = new StringBuilder();
         biomeFlag = false; maxTempFlag = false; minTempFlag = false; maxRangeFlag = false; earthFlag = false; precipFlag = false; avgTempFlag = false;
         for(int c=0; c<cellColumnCount; c++) {
             for(int r=0; r<cellRowCount; r++) {
@@ -2521,28 +2521,43 @@ public class Grid extends JPanel{
         }
         double worldTotal = (double)100/(cellColumnCount*cellRowCount);
         double total = (double)100/(cellColumnCount*cellRowCount -(oceanCount + freshwaterCount));
-        System.out.println("Ocean Coverage: " + String.format("%.2f", oceanCount * worldTotal) + "%. Land Coverage: " + String.format("%.2f", 100 - (oceanCount * worldTotal)));
-        System.out.println(
-            "Land Coverage Breakdown:   " +
-            " Freshwater: " + String.format("%.2f", freshwaterCount * total) + "%" +
-            " Mountainous: " + String.format("%.2f", mtnCount * total) + "%" +
-            " Tropical Rainforest: " + String.format("%.2f", rainforestCount * total) + "%"
-        );
-        System.out.println(
-            "Tropical Seasonal Rainforest: " + String.format("%.2f", tropicSeasonalCount * total) + "%" +
-            " Temperate Rainforest: " + String.format("%.2f", temperateRainCount * total) + "%" +
-            " Temperate Deciduous Forest: " + String.format("%.2f", temperateDeciduousCount * total) + "%"
-        );
-        System.out.println(
-            "Temperate Grasslands: " + String.format("%.2f", temperateGrassCount * total) + "%" +
-            " Desert: " + String.format("%.2f", desertCount * total) + "%" +
-            " Savanna: " + String.format("%.2f", savannaCount * total) + "%" +
-            " Tundra: " + String.format("%.2f", tundraCount * total) + "%" +
-            " Taiga: " + String.format("%.2f", taigaCount * total) + "%"
-        );
-        System.out.println();
+        output.append("Ocean Coverage: ")
+                .append(String.format("%.2f", oceanCount * worldTotal))
+                .append("%. Land Coverage: ")
+                .append(String.format("%.2f", 100 - (oceanCount * worldTotal)))
+                .append("%\n");
+
+        output.append("Land Coverage Breakdown:   ")
+                .append(" Freshwater: ")
+                .append(String.format("%.2f", freshwaterCount * total))
+                .append("% Mountainous: ")
+                .append(String.format("%.2f", mtnCount * total))
+                .append("% Tropical Rainforest: ")
+                .append(String.format("%.2f", rainforestCount * total))
+                .append("%\n");
+
+        output.append("Tropical Seasonal Rainforest: ")
+                .append(String.format("%.2f", tropicSeasonalCount * total))
+                .append("% Temperate Rainforest: ")
+                .append(String.format("%.2f", temperateRainCount * total))
+                .append("% Temperate Deciduous Forest: ")
+                .append(String.format("%.2f", temperateDeciduousCount * total))
+                .append("%\n");
+
+        output.append("Temperate Grasslands: ")
+                .append(String.format("%.2f", temperateGrassCount * total))
+                .append("% Desert: ")
+                .append(String.format("%.2f", desertCount * total))
+                .append("% Savanna: ")
+                .append(String.format("%.2f", savannaCount * total))
+                .append("% Tundra: ")
+                .append(String.format("%.2f", tundraCount * total))
+                .append("% Taiga: ")
+                .append(String.format("%.2f", taigaCount * total))
+                .append("%\n");
         biomeFlag = true;
         repaint();
+        Main.updateTextArea(output.toString());
     }
 
     public void drawEarthMap() {
