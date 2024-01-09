@@ -124,8 +124,8 @@ public class Main extends JFrame{
 //TO DO
 
 /*
+-PRIORITY - Remove redundant text at the bottom once all buttons are implemented. This is now in progress - fix before moving on.
 -Need CustomButton class to set max width of buttons so we can eventually have it scale dynamically with how much space the map itself takes up.
--Remove redundant text at the bottom once all buttons are implemented.
 -Add inset offset for where buttons start at top right. Implement wind direction change and new map buttons.
 -For the wind direction logic in the keylistener class, why are we drawing the earth map before hand? Tried commenting it out
     and setting the defineWaterAvail getColors() to getTrueColors() but that didn't fix it. Investigate further.
