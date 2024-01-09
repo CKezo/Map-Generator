@@ -19,16 +19,16 @@ public class Main extends JFrame{
         setLocationRelativeTo(null);
 
         //Return to below when you integrate the system output in the terminal into the main program
-//        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-//        GraphicsDevice gd = ge.getDefaultScreenDevice();
-//        if(gd.isFullScreenSupported()){
-//            setUndecorated(true);
-//            gd.setFullScreenWindow(this);
-//        } else {
-//            System.err.println("Full screen not supported");
-//            setPreferredSize(new Dimension(WIDTH, HEIGHT));
-//            setMinimumSize(new Dimension(WIDTH, HEIGHT));
-//        }
+        /*GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+        GraphicsDevice gd = ge.getDefaultScreenDevice();
+        if(gd.isFullScreenSupported()){
+            setUndecorated(true);
+            gd.setFullScreenWindow(this);
+        } else {
+            System.err.println("Full screen not supported");
+            setPreferredSize(new Dimension(WIDTH, HEIGHT));
+            setMinimumSize(new Dimension(WIDTH, HEIGHT));
+        }*/
 
         KeyListenerClass theKeyListener = new KeyListenerClass();
         theKeyListener.addKeyListener(theKeyListener);
@@ -81,6 +81,8 @@ public class Main extends JFrame{
         button.setBackground(Color.BLACK);
         button.setFocusable(false);
         button.addActionListener(actionListener);
+        Dimension maxSize = new Dimension(Integer.MAX_VALUE, button.getPreferredSize().height);
+        button.setMaximumSize(maxSize);
         return button;
     }
     public static void updateTextArea(String text) {

@@ -2,7 +2,9 @@ import javax.swing.*;
 import java.awt.*;
 import java.lang.Math;
 import java.util.ArrayList;
-
+import java.util.List;
+import java.util.Arrays;
+import java.util.function.Function;
 
 public class Grid extends JPanel{
     private final int cellColumnCount = 250;   //250
@@ -48,7 +50,7 @@ public class Grid extends JPanel{
     private String windComesFrom;
     private int mtnCount, tundraCount, desertCount, temperateGrassCount, savannaCount, taigaCount, temperateDeciduousCount, tropicSeasonalCount, temperateRainCount, rainforestCount, oceanCount, freshwaterCount;
     public Grid() {
-        setLayout(null);
+        setLayout(new BorderLayout());
         for (int c = 0; c < cellColumnCount; c++) {
             for (int r = 0; r < cellRowCount; r++) {
                 grid[c][r] = new GridCell();
@@ -70,7 +72,449 @@ public class Grid extends JPanel{
         rainforestCount = 0;
         oceanCount = 0;
         freshwaterCount = 0;
+        // Map panel
+        JPanel mapPanel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                drawMap(g, getWidth(), getHeight()); // Draw map based on panel size - to be implemented
+            }
+        };
+        mapPanel.setBackground(Color.BLACK);
+        add(mapPanel, BorderLayout.CENTER);
+
+        List<LegendItem> legendItems = Arrays.asList(
+                new LegendItem("Tropical Rainforest", tropicalRainforest),
+                new LegendItem("Tropical Seasonal Rainforest", tropicalSeasonalRain),
+                new LegendItem("Savanna", savanna),
+                new LegendItem("Desert", desert),
+                new LegendItem("Taiga", taiga),
+                new LegendItem("Tundra", tundra),
+                new LegendItem("Alpine", mountainWhite),
+                new LegendItem("Temperate Rainforest", temperateRainforest),
+                new LegendItem("Temperate Deciduous Forest", temperateDeciduous),
+                new LegendItem("Temperate Grasslands", temperateGrassland)
+        );
+
+
+        JPanel legendPanel = new JPanel();
+        legendPanel.setLayout(new BoxLayout(legendPanel, BoxLayout.Y_AXIS));
+        legendPanel.setBackground(Color.BLACK);
+
+        Function<List<LegendItem>, JPanel> createLinePanel = (items) -> {
+            // Reduced horizontal gap in FlowLayout
+            JPanel linePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+            linePanel.setBackground(Color.BLACK);
+
+            for (LegendItem item : items) {
+                JLabel label = new JLabel(item.text);
+                label.setForeground(Color.WHITE);
+
+                JPanel colorPanel = new JPanel();
+                colorPanel.setBackground(item.color);
+                colorPanel.setPreferredSize(new Dimension(12, 12));
+
+                linePanel.add(colorPanel);
+                linePanel.add(label);
+                linePanel.add(Box.createHorizontalStrut(10));
+            }
+
+            return linePanel;
+        };
+
+        List<LegendItem> firstLineItems = legendItems.subList(0, 5);
+        List<LegendItem> secondLineItems = legendItems.subList(5, legendItems.size());
+
+        legendPanel.add(createLinePanel.apply(firstLineItems));
+        legendPanel.add(createLinePanel.apply(secondLineItems));
+
+        add(legendPanel, BorderLayout.SOUTH);
+
+
+        //this one was working with the less flexible manual pixel location designations
+/*        JPanel legendPanel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                drawLegend(g, getWidth(), getHeight());
+            }
+        };*/
+
+
     }
+
+    private void drawMap(Graphics g, int width, int height) {
+        for(int c=0; c<cellColumnCount; c++) {
+            for (int r = 0; r < cellRowCount; r++) {
+                g.setColor(grid[c][r].getColor());
+                g.fillRect(grid[c][r].getX(), grid[c][r].getY(), cellWidth, cellHeight);
+            }
+        }
+    }
+
+    private void drawLegend(Graphics g, int width, int height) { //this can work if we modify the pixel locations to be in line with this now being in its own panel. However, keep looking into dynamically resizing solution for now.
+        final int SIZE12 = 12;
+        Font gameFont = new Font("SansSerif", Font.PLAIN, SIZE12);
+        g.setFont(gameFont);
+        g.setColor(Color.white);
+        if(biomeFlag) {
+            g.drawString("Tropical Rainforest", 25, 14);
+            g.setColor(tropicalRainforest);
+            g.fillRect(7, 2, 14, 14);
+
+            g.setColor(Color.white);
+            g.drawString("Tropical Seasonal Rainforest", 160, 14);
+            g.setColor(tropicalSeasonalRain);
+            g.fillRect(142, 2, 14, 14);
+
+            g.setColor(Color.white);
+            g.drawString("Savanna", 350, 14);
+            g.setColor(savanna);
+            g.fillRect(332, 2, 14, 14);
+
+            g.setColor(Color.white);
+            g.drawString("Desert", 434, 14);
+            g.setColor(desert);
+            g.fillRect(414, 2, 14, 14);
+
+            g.setColor(Color.white);
+            g.drawString("Taiga", 505, 14);
+            g.setColor(taiga);
+            g.fillRect(487, 2, 14, 14);
+
+            g.setColor(Color.white);
+            g.drawString("Tundra", 568, 14);
+            g.setColor(tundra);
+            g.fillRect(550, 2, 14, 14);
+
+            g.setColor(Color.white);
+            g.drawString("Alpine", 525, 34);
+            g.setColor(mountainWhite);
+            g.fillRect(507, 22, 14, 14);
+
+            g.setColor(Color.white);
+            g.drawString("Temperate Rainforest", 25, 34);
+            g.setColor(temperateRainforest);
+            g.fillRect(7, 22, 14, 14);
+
+            g.setColor(Color.white);
+            g.drawString("Temperate Deciduous Forest", 176, 34);
+            g.setColor(temperateDeciduous);
+            g.fillRect(158, 22, 14, 14);
+
+            g.setColor(Color.white);
+            g.drawString("Temperate Grasslands", 368, 34);
+            g.setColor(temperateGrassland);
+            g.fillRect(348, 22, 14, 14);
+        }
+        if(maxRangeFlag) {
+            g.setColor(Color.cyan);
+            g.fillRect(7, 600, 14, 14);
+            g.setColor(Color.white);
+            g.drawString("Stable Temperatures", 25, 612);
+
+            g.setColor(Color.green);
+            g.fillRect(152, 600, 14, 14);
+            g.setColor(Color.white);
+            g.drawString("Light Fluctuation", 170, 612);
+
+            g.setColor(Color.yellow);
+            g.fillRect(274, 600, 14, 14);
+            g.setColor(Color.white);
+            g.drawString("Moderate Fluctuation", 292, 612);
+
+            g.setColor(Color.red);
+            g.fillRect(421, 600, 14, 14);
+            g.setColor(Color.white);
+            g.drawString("Extreme Fluctuation", 439, 612);
+        }
+        if(maxTempFlag) {
+            g.setColor(Color.cyan);
+            g.fillRect(7, 600, 14, 14);
+            g.setColor(Color.white);
+            g.drawString(Math.round(globalMaxLow) + "°F", 25, 612);
+
+            g.setColor(Color.green);
+            g.fillRect(85, 600, 14, 14);
+            g.setColor(Color.white);
+            g.drawString(Math.round(((globalMaxHigh-globalMaxLow) * .33) + globalMaxLow) + "°F", 103, 612);
+
+            g.setColor(Color.yellow);
+            g.fillRect(163, 600, 14, 14);
+            g.setColor(Color.white);
+            g.drawString(Math.round(((globalMaxHigh-globalMaxLow) * .67) + globalMaxLow) + "°F", 181, 612);
+
+            g.setColor(Color.red);
+            g.fillRect(241, 600, 14, 14);
+            g.setColor(Color.white);
+            g.drawString(Math.round(globalMaxHigh) + "°F", 259, 612);
+        }
+        if(minTempFlag) {
+            g.setColor(Color.cyan);
+            g.fillRect(7, 600, 14, 14);
+            g.setColor(Color.white);
+            g.drawString(Math.round(globalMinLow) + "°F", 25, 612);
+
+            g.setColor(Color.green);
+            g.fillRect(85, 600, 14, 14);
+            g.setColor(Color.white);
+            g.drawString(Math.round(((globalMinHigh-globalMinLow) * .33) + globalMinLow) + "°F", 103, 612);
+
+            g.setColor(Color.yellow);
+            g.fillRect(163, 600, 14, 14);
+            g.setColor(Color.white);
+            g.drawString(Math.round(((globalMinHigh-globalMinLow) * .67) + globalMinLow) + "°F", 181, 612);
+
+            g.setColor(Color.red);
+            g.fillRect(241, 600, 14, 14);
+            g.setColor(Color.white);
+            g.drawString(Math.round(globalMinHigh) + "°F", 259, 612);
+        }
+        if(avgTempFlag) {
+            g.setColor(Color.cyan);
+            g.fillRect(7, 600, 14, 14);
+            g.setColor(Color.white);
+            g.drawString(Math.round(globalAvgLow) + "°F", 25, 612);
+
+            g.setColor(Color.green);
+            g.fillRect(85, 600, 14, 14);
+            g.setColor(Color.white);
+            g.drawString(Math.round(((globalAvgHigh-globalAvgLow) * .33) + globalAvgLow) + "°F", 103, 612);
+
+            g.setColor(Color.yellow);
+            g.fillRect(163, 600, 14, 14);
+            g.setColor(Color.white);
+            g.drawString(Math.round(((globalAvgHigh-globalAvgLow) * .67) + globalAvgLow) + "°F", 181, 612);
+
+            g.setColor(Color.red);
+            g.fillRect(241, 600, 14, 14);
+            g.setColor(Color.white);
+            g.drawString(Math.round(globalAvgHigh) + "°F", 259, 612);
+        }
+        if(precipFlag) {
+            g.setColor(Color.cyan);
+            g.fillRect(7, 600, 14, 14);
+            g.setColor(Color.white);
+            g.drawString("100%", 25, 612);
+
+            g.setColor(Color.green);
+            g.fillRect(85, 600, 14, 14);
+            g.setColor(Color.white);
+            g.drawString("67%", 103, 612);
+
+            g.setColor(Color.yellow);
+            g.fillRect(163, 600, 14, 14);
+            g.setColor(Color.white);
+            g.drawString("33%", 181, 612);
+
+            g.setColor(Color.red);
+            g.fillRect(241, 600, 14, 14);
+            g.setColor(Color.white);
+            g.drawString("0%", 259, 612);
+        }
+    }
+
+    /*public void paintComponent(Graphics g){
+        setBackground(Color.BLACK);
+        super.paintComponent(g);
+        for(int c=0; c<cellColumnCount; c++) {
+            for (int r = 0; r < cellRowCount; r++) {
+                g.setColor(grid[c][r].getColor());
+                g.fillRect(grid[c][r].getX(), grid[c][r].getY(), cellWidth, cellHeight);
+            }
+        }
+        final int SIZE12 = 12;
+        Font gameFont = new Font("SansSerif", Font.PLAIN, SIZE12);
+        g.setFont(gameFont);
+        g.setColor(Color.white);
+
+        g.drawString("(E)arth View", 5, 578);
+        g.drawString("(B)iomes", 165, 578);
+        g.drawString("(W)ater Availability", 165, 593);
+        g.drawString("(R)ange of Temperature", 300, 578);
+        g.drawString("(A)verage Temperature", 300, 593);
+        g.drawString("(H)ighest Temperature", 465, 578);
+        g.drawString("(L)owest Temperature", 465, 593);
+        if(windComesFrom.equals("west")) {
+            g.drawString("(D)irection of Wind: E", 5, 593);
+        }
+        else if(windComesFrom.equals("northwest")) {
+            g.drawString("(D)irection of Wind: SE", 5, 593);
+        }
+        else if(windComesFrom.equals("north")) {
+            g.drawString("(D)irection of Wind: S", 5, 593);
+        }
+        else if(windComesFrom.equals("northeast")) {
+            g.drawString("(D)irection of Wind: SW", 5, 593);
+        }
+        else if(windComesFrom.equals("east")) {
+            g.drawString("(D)irection of Wind: W", 5, 593);
+        }
+        else if(windComesFrom.equals("southeast")) {
+            g.drawString("(D)irection of Wind: NW", 5, 593);
+        }
+        else if(windComesFrom.equals("south")) {
+            g.drawString("(D)irection of Wind: N", 5, 593);
+        }
+        else if(windComesFrom.equals("southwest")) {
+            g.drawString("(D)irection of Wind: NE", 5, 593);
+        }
+        if(biomeFlag) {
+            g.drawString("Tropical Rainforest", 25, 612);
+            g.setColor(tropicalRainforest);
+            g.fillRect(7, 600, 14, 14);
+
+            g.setColor(Color.white);
+            g.drawString("Tropical Seasonal Rainforest", 160, 612);
+            g.setColor(tropicalSeasonalRain);
+            g.fillRect(142, 600, 14, 14);
+
+            g.setColor(Color.white);
+            g.drawString("Savanna", 350, 612);
+            g.setColor(savanna);
+            g.fillRect(332, 600, 14, 14);
+
+            g.setColor(Color.white);
+            g.drawString("Desert", 434, 612);
+            g.setColor(desert);
+            g.fillRect(414, 600, 14, 14);
+
+            g.setColor(Color.white);
+            g.drawString("Taiga", 505, 612);
+            g.setColor(taiga);
+            g.fillRect(487, 600, 14, 14);
+
+            g.setColor(Color.white);
+            g.drawString("Tundra", 568, 612);
+            g.setColor(tundra);
+            g.fillRect(550, 600, 14, 14);
+
+            g.setColor(Color.white);
+            g.drawString("Alpine", 525, 632);
+            g.setColor(mountainWhite);
+            g.fillRect(507, 620, 14, 14);
+
+            g.setColor(Color.white);
+            g.drawString("Temperate Rainforest", 25, 632);
+            g.setColor(temperateRainforest);
+            g.fillRect(7, 620, 14, 14);
+
+            g.setColor(Color.white);
+            g.drawString("Temperate Deciduous Forest", 176, 632);
+            g.setColor(temperateDeciduous);
+            g.fillRect(158, 620, 14, 14);
+
+            g.setColor(Color.white);
+            g.drawString("Temperate Grasslands", 368, 632);
+            g.setColor(temperateGrassland);
+            g.fillRect(348, 620, 14, 14);
+        }
+        if(maxRangeFlag) {
+            g.setColor(Color.cyan);
+            g.fillRect(7, 600, 14, 14);
+            g.setColor(Color.white);
+            g.drawString("Stable Temperatures", 25, 612);
+
+            g.setColor(Color.green);
+            g.fillRect(152, 600, 14, 14);
+            g.setColor(Color.white);
+            g.drawString("Light Fluctuation", 170, 612);
+
+            g.setColor(Color.yellow);
+            g.fillRect(274, 600, 14, 14);
+            g.setColor(Color.white);
+            g.drawString("Moderate Fluctuation", 292, 612);
+
+            g.setColor(Color.red);
+            g.fillRect(421, 600, 14, 14);
+            g.setColor(Color.white);
+            g.drawString("Extreme Fluctuation", 439, 612);
+        }
+        if(maxTempFlag) {
+            g.setColor(Color.cyan);
+            g.fillRect(7, 600, 14, 14);
+            g.setColor(Color.white);
+            g.drawString(Math.round(globalMaxLow) + "°F", 25, 612);
+
+            g.setColor(Color.green);
+            g.fillRect(85, 600, 14, 14);
+            g.setColor(Color.white);
+            g.drawString(Math.round(((globalMaxHigh-globalMaxLow) * .33) + globalMaxLow) + "°F", 103, 612);
+
+            g.setColor(Color.yellow);
+            g.fillRect(163, 600, 14, 14);
+            g.setColor(Color.white);
+            g.drawString(Math.round(((globalMaxHigh-globalMaxLow) * .67) + globalMaxLow) + "°F", 181, 612);
+
+            g.setColor(Color.red);
+            g.fillRect(241, 600, 14, 14);
+            g.setColor(Color.white);
+            g.drawString(Math.round(globalMaxHigh) + "°F", 259, 612);
+        }
+        if(minTempFlag) {
+            g.setColor(Color.cyan);
+            g.fillRect(7, 600, 14, 14);
+            g.setColor(Color.white);
+            g.drawString(Math.round(globalMinLow) + "°F", 25, 612);
+
+            g.setColor(Color.green);
+            g.fillRect(85, 600, 14, 14);
+            g.setColor(Color.white);
+            g.drawString(Math.round(((globalMinHigh-globalMinLow) * .33) + globalMinLow) + "°F", 103, 612);
+
+            g.setColor(Color.yellow);
+            g.fillRect(163, 600, 14, 14);
+            g.setColor(Color.white);
+            g.drawString(Math.round(((globalMinHigh-globalMinLow) * .67) + globalMinLow) + "°F", 181, 612);
+
+            g.setColor(Color.red);
+            g.fillRect(241, 600, 14, 14);
+            g.setColor(Color.white);
+            g.drawString(Math.round(globalMinHigh) + "°F", 259, 612);
+        }
+        if(avgTempFlag) {
+            g.setColor(Color.cyan);
+            g.fillRect(7, 600, 14, 14);
+            g.setColor(Color.white);
+            g.drawString(Math.round(globalAvgLow) + "°F", 25, 612);
+
+            g.setColor(Color.green);
+            g.fillRect(85, 600, 14, 14);
+            g.setColor(Color.white);
+            g.drawString(Math.round(((globalAvgHigh-globalAvgLow) * .33) + globalAvgLow) + "°F", 103, 612);
+
+            g.setColor(Color.yellow);
+            g.fillRect(163, 600, 14, 14);
+            g.setColor(Color.white);
+            g.drawString(Math.round(((globalAvgHigh-globalAvgLow) * .67) + globalAvgLow) + "°F", 181, 612);
+
+            g.setColor(Color.red);
+            g.fillRect(241, 600, 14, 14);
+            g.setColor(Color.white);
+            g.drawString(Math.round(globalAvgHigh) + "°F", 259, 612);
+        }
+        if(precipFlag) {
+            g.setColor(Color.cyan);
+            g.fillRect(7, 600, 14, 14);
+            g.setColor(Color.white);
+            g.drawString("100%", 25, 612);
+
+            g.setColor(Color.green);
+            g.fillRect(85, 600, 14, 14);
+            g.setColor(Color.white);
+            g.drawString("67%", 103, 612);
+
+            g.setColor(Color.yellow);
+            g.fillRect(163, 600, 14, 14);
+            g.setColor(Color.white);
+            g.drawString("33%", 181, 612);
+
+            g.setColor(Color.red);
+            g.fillRect(241, 600, 14, 14);
+            g.setColor(Color.white);
+            g.drawString("0%", 259, 612);
+        }
+    }*/
 
     public int getCellColumnCount(){
         return cellColumnCount;
@@ -2619,206 +3063,4 @@ public class Grid extends JPanel{
         repaint();
     }
 
-    public void paintComponent(Graphics g){
-        setBackground(Color.BLACK);
-        Graphics2D g2 = (Graphics2D)g;
-        super.paintComponent(g);
-        for(int c=0; c<cellColumnCount; c++) {
-            for (int r = 0; r < cellRowCount; r++) {
-                g.setColor(grid[c][r].getColor());
-                g.fillRect(grid[c][r].getX(), grid[c][r].getY(), cellWidth, cellHeight);
-            }
-        }
-        final int SIZE12 = 12;
-        Font gameFont = new Font("SansSerif", Font.PLAIN, SIZE12);
-        g.setFont(gameFont);
-        g.setColor(Color.white);
-
-        g.drawString("(E)arth View", 5, 578);
-        g.drawString("(B)iomes", 165, 578);
-        g.drawString("(W)ater Availability", 165, 593);
-        g.drawString("(R)ange of Temperature", 300, 578);
-        g.drawString("(A)verage Temperature", 300, 593);
-        g.drawString("(H)ighest Temperature", 465, 578);
-        g.drawString("(L)owest Temperature", 465, 593);
-        if(windComesFrom.equals("west")) {
-            g.drawString("(D)irection of Wind: E", 5, 593);
-        }
-        else if(windComesFrom.equals("northwest")) {
-            g.drawString("(D)irection of Wind: SE", 5, 593);
-        }
-        else if(windComesFrom.equals("north")) {
-            g.drawString("(D)irection of Wind: S", 5, 593);
-        }
-        else if(windComesFrom.equals("northeast")) {
-            g.drawString("(D)irection of Wind: SW", 5, 593);
-        }
-        else if(windComesFrom.equals("east")) {
-            g.drawString("(D)irection of Wind: W", 5, 593);
-        }
-        else if(windComesFrom.equals("southeast")) {
-            g.drawString("(D)irection of Wind: NW", 5, 593);
-        }
-        else if(windComesFrom.equals("south")) {
-            g.drawString("(D)irection of Wind: N", 5, 593);
-        }
-        else if(windComesFrom.equals("southwest")) {
-            g.drawString("(D)irection of Wind: NE", 5, 593);
-        }
-        if(biomeFlag) {
-            g.drawString("Tropical Rainforest", 25, 612);
-            g.setColor(tropicalRainforest);
-            g.fillRect(7, 600, 14, 14);
-
-            g.setColor(Color.white);
-            g.drawString("Tropical Seasonal Rainforest", 160, 612);
-            g.setColor(tropicalSeasonalRain);
-            g.fillRect(142, 600, 14, 14);
-
-            g.setColor(Color.white);
-            g.drawString("Savanna", 350, 612);
-            g.setColor(savanna);
-            g.fillRect(332, 600, 14, 14);
-
-            g.setColor(Color.white);
-            g.drawString("Desert", 434, 612);
-            g.setColor(desert);
-            g.fillRect(414, 600, 14, 14);
-
-            g.setColor(Color.white);
-            g.drawString("Taiga", 505, 612);
-            g.setColor(taiga);
-            g.fillRect(487, 600, 14, 14);
-
-            g.setColor(Color.white);
-            g.drawString("Tundra", 568, 612);
-            g.setColor(tundra);
-            g.fillRect(550, 600, 14, 14);
-
-            g.setColor(Color.white);
-            g.drawString("Alpine", 525, 632);
-            g.setColor(mountainWhite);
-            g.fillRect(507, 620, 14, 14);
-
-            g.setColor(Color.white);
-            g.drawString("Temperate Rainforest", 25, 632);
-            g.setColor(temperateRainforest);
-            g.fillRect(7, 620, 14, 14);
-
-            g.setColor(Color.white);
-            g.drawString("Temperate Deciduous Forest", 176, 632);
-            g.setColor(temperateDeciduous);
-            g.fillRect(158, 620, 14, 14);
-
-            g.setColor(Color.white);
-            g.drawString("Temperate Grasslands", 368, 632);
-            g.setColor(temperateGrassland);
-            g.fillRect(348, 620, 14, 14);
-        }
-        if(maxRangeFlag) {
-            g.setColor(Color.cyan);
-            g.fillRect(7, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString("Stable Temperatures", 25, 612);
-
-            g.setColor(Color.green);
-            g.fillRect(152, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString("Light Fluctuation", 170, 612);
-
-            g.setColor(Color.yellow);
-            g.fillRect(274, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString("Moderate Fluctuation", 292, 612);
-
-            g.setColor(Color.red);
-            g.fillRect(421, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString("Extreme Fluctuation", 439, 612);
-        }
-        if(maxTempFlag) {
-            g.setColor(Color.cyan);
-            g.fillRect(7, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString(Math.round(globalMaxLow) + "°F", 25, 612);
-
-            g.setColor(Color.green);
-            g.fillRect(85, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString(Math.round(((globalMaxHigh-globalMaxLow) * .33) + globalMaxLow) + "°F", 103, 612);
-
-            g.setColor(Color.yellow);
-            g.fillRect(163, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString(Math.round(((globalMaxHigh-globalMaxLow) * .67) + globalMaxLow) + "°F", 181, 612);
-
-            g.setColor(Color.red);
-            g.fillRect(241, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString(Math.round(globalMaxHigh) + "°F", 259, 612);
-        }
-        if(minTempFlag) {
-            g.setColor(Color.cyan);
-            g.fillRect(7, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString(Math.round(globalMinLow) + "°F", 25, 612);
-
-            g.setColor(Color.green);
-            g.fillRect(85, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString(Math.round(((globalMinHigh-globalMinLow) * .33) + globalMinLow) + "°F", 103, 612);
-
-            g.setColor(Color.yellow);
-            g.fillRect(163, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString(Math.round(((globalMinHigh-globalMinLow) * .67) + globalMinLow) + "°F", 181, 612);
-
-            g.setColor(Color.red);
-            g.fillRect(241, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString(Math.round(globalMinHigh) + "°F", 259, 612);
-        }
-        if(avgTempFlag) {
-            g.setColor(Color.cyan);
-            g.fillRect(7, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString(Math.round(globalAvgLow) + "°F", 25, 612);
-
-            g.setColor(Color.green);
-            g.fillRect(85, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString(Math.round(((globalAvgHigh-globalAvgLow) * .33) + globalAvgLow) + "°F", 103, 612);
-
-            g.setColor(Color.yellow);
-            g.fillRect(163, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString(Math.round(((globalAvgHigh-globalAvgLow) * .67) + globalAvgLow) + "°F", 181, 612);
-
-            g.setColor(Color.red);
-            g.fillRect(241, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString(Math.round(globalAvgHigh) + "°F", 259, 612);
-        }
-        if(precipFlag) {
-            g.setColor(Color.cyan);
-            g.fillRect(7, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString("100%", 25, 612);
-
-            g.setColor(Color.green);
-            g.fillRect(85, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString("67%", 103, 612);
-
-            g.setColor(Color.yellow);
-            g.fillRect(163, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString("33%", 181, 612);
-
-            g.setColor(Color.red);
-            g.fillRect(241, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString("0%", 259, 612);
-        }
-    }
 }
