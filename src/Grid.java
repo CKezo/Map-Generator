@@ -49,6 +49,8 @@ public class Grid extends JPanel{
     private boolean avgTempFlag = false;
     private String windComesFrom;
     private int mtnCount, tundraCount, desertCount, temperateGrassCount, savannaCount, taigaCount, temperateDeciduousCount, tropicSeasonalCount, temperateRainCount, rainforestCount, oceanCount, freshwaterCount;
+    private boolean waterAvailFirstRun = true;
+    private JPanel legendPanel;
     public Grid() {
         setLayout(new BorderLayout());
         for (int c = 0; c < cellColumnCount; c++) {
@@ -72,7 +74,9 @@ public class Grid extends JPanel{
         rainforestCount = 0;
         oceanCount = 0;
         freshwaterCount = 0;
-        // Map panel
+
+        windComesFrom = "west";
+
         JPanel mapPanel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
@@ -82,8 +86,44 @@ public class Grid extends JPanel{
         };
         mapPanel.setBackground(Color.BLACK);
         add(mapPanel, BorderLayout.CENTER);
+        legendPanel = new JPanel();
+        legendPanel.setLayout(new BoxLayout(legendPanel, BoxLayout.Y_AXIS));
+        legendPanel.setBackground(Color.BLACK);
+        add(legendPanel, BorderLayout.SOUTH);
+    }
 
-        List<LegendItem> legendItems = Arrays.asList(
+    private void drawMap(Graphics g, int width, int height) { //Return to this to implement the width and height parameters
+        for(int c=0; c<cellColumnCount; c++) {
+            for (int r = 0; r < cellRowCount; r++) {
+                g.setColor(grid[c][r].getColor());
+                g.fillRect(grid[c][r].getX(), grid[c][r].getY(), cellWidth, cellHeight);
+            }
+        }
+    }
+
+    private JPanel createLinePanel(List<LegendItem> items) {
+        JPanel linePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        linePanel.setBackground(Color.BLACK);
+
+        for (LegendItem item : items) {
+            JLabel label = new JLabel(item.text);
+            label.setForeground(Color.WHITE);
+
+            JPanel colorPanel = new JPanel();
+            colorPanel.setBackground(item.color);
+            colorPanel.setPreferredSize(new Dimension(12, 12));
+
+            linePanel.add(colorPanel);
+            linePanel.add(label);
+            linePanel.add(Box.createHorizontalStrut(10));
+        }
+
+        return linePanel;
+    }
+    public void updateLegend(){
+        legendPanel.removeAll();
+        if(biomeFlag){
+            List<LegendItem> biomeItems = Arrays.asList(
                 new LegendItem("Tropical Rainforest", tropicalRainforest),
                 new LegendItem("Tropical Seasonal Rainforest", tropicalSeasonalRain),
                 new LegendItem("Savanna", savanna),
@@ -94,427 +134,69 @@ public class Grid extends JPanel{
                 new LegendItem("Temperate Rainforest", temperateRainforest),
                 new LegendItem("Temperate Deciduous Forest", temperateDeciduous),
                 new LegendItem("Temperate Grasslands", temperateGrassland)
-        );
-
-
-        JPanel legendPanel = new JPanel();
-        legendPanel.setLayout(new BoxLayout(legendPanel, BoxLayout.Y_AXIS));
-        legendPanel.setBackground(Color.BLACK);
-
-        Function<List<LegendItem>, JPanel> createLinePanel = (items) -> {
-            // Reduced horizontal gap in FlowLayout
-            JPanel linePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
-            linePanel.setBackground(Color.BLACK);
-
-            for (LegendItem item : items) {
-                JLabel label = new JLabel(item.text);
-                label.setForeground(Color.WHITE);
-
-                JPanel colorPanel = new JPanel();
-                colorPanel.setBackground(item.color);
-                colorPanel.setPreferredSize(new Dimension(12, 12));
-
-                linePanel.add(colorPanel);
-                linePanel.add(label);
-                linePanel.add(Box.createHorizontalStrut(10));
-            }
-
-            return linePanel;
-        };
-
-        List<LegendItem> firstLineItems = legendItems.subList(0, 5);
-        List<LegendItem> secondLineItems = legendItems.subList(5, legendItems.size());
-
-        legendPanel.add(createLinePanel.apply(firstLineItems));
-        legendPanel.add(createLinePanel.apply(secondLineItems));
-
-        add(legendPanel, BorderLayout.SOUTH);
-
-
-        //this one was working with the less flexible manual pixel location designations
-/*        JPanel legendPanel = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                drawLegend(g, getWidth(), getHeight());
-            }
-        };*/
-
-
-    }
-
-    private void drawMap(Graphics g, int width, int height) {
-        for(int c=0; c<cellColumnCount; c++) {
-            for (int r = 0; r < cellRowCount; r++) {
-                g.setColor(grid[c][r].getColor());
-                g.fillRect(grid[c][r].getX(), grid[c][r].getY(), cellWidth, cellHeight);
-            }
+            );
+            List<LegendItem> firstLineItems = biomeItems.subList(0, 5);
+            List<LegendItem> secondLineItems = biomeItems.subList(5, biomeItems.size());
+            legendPanel.add(createLinePanel(firstLineItems));
+            legendPanel.add(createLinePanel(secondLineItems));
+            legendPanel.revalidate();
+            legendPanel.repaint();
+        } else if (maxRangeFlag) {
+            List<LegendItem> maxRangeItems = Arrays.asList(
+                new LegendItem("Stable Temperatures", Color.cyan),
+                new LegendItem("Light Fluctuation", Color.green),
+                new LegendItem("Moderate Fluctuation", Color.yellow),
+                new LegendItem("Extreme Fluctuation", Color.red)
+            );
+            legendPanel.add(createLinePanel(maxRangeItems));
+            legendPanel.revalidate();
+            legendPanel.repaint();
+        } else if (maxTempFlag) {
+            List<LegendItem> maxTempItems = Arrays.asList(
+                new LegendItem(Math.round(globalMaxLow) + "°F", Color.cyan),
+                new LegendItem(Math.round(((globalMaxHigh-globalMaxLow) * .33) + globalMaxLow) + "°F", Color.green),
+                new LegendItem(Math.round(((globalMaxHigh-globalMaxLow) * .67) + globalMaxLow) + "°F", Color.yellow),
+                new LegendItem(Math.round(globalMaxHigh) + "°F", Color.red)
+            );
+            legendPanel.add(createLinePanel(maxTempItems));
+            legendPanel.revalidate();
+            legendPanel.repaint();
+        } else if (minTempFlag) {
+            List<LegendItem> minTempItems = Arrays.asList(
+                    new LegendItem(Math.round(globalMinLow) + "°F", Color.cyan),
+                    new LegendItem(Math.round(((globalMinHigh-globalMinLow) * .33) + globalMinLow) + "°F", Color.green),
+                    new LegendItem(Math.round(((globalMinHigh-globalMinLow) * .67) + globalMinLow) + "°F", Color.yellow),
+                    new LegendItem(Math.round(globalMinHigh) + "°F", Color.red)
+            );
+            legendPanel.add(createLinePanel(minTempItems));
+            legendPanel.revalidate();
+            legendPanel.repaint();
+        } else if (avgTempFlag) {
+            List<LegendItem> avgTempItems = Arrays.asList(
+                    new LegendItem(Math.round(globalAvgLow) + "°F", Color.cyan),
+                    new LegendItem(Math.round(((globalAvgHigh-globalAvgLow) * .33) + globalAvgLow) + "°F", Color.green),
+                    new LegendItem(Math.round(((globalAvgHigh-globalAvgLow) * .67) + globalAvgLow) + "°F", Color.yellow),
+                    new LegendItem(Math.round(globalAvgHigh) + "°F", Color.red)
+            );
+            legendPanel.add(createLinePanel(avgTempItems));
+            legendPanel.revalidate();
+            legendPanel.repaint();
+        } else if (precipFlag) {
+            List<LegendItem> precipItems = Arrays.asList(
+                    new LegendItem("100%", Color.cyan),
+                    new LegendItem("67%", Color.green),
+                    new LegendItem("33%", Color.yellow),
+                    new LegendItem("0%", Color.red)
+            );
+            legendPanel.add(createLinePanel(precipItems));
+            legendPanel.revalidate();
+            legendPanel.repaint();
+        } else if (earthFlag) {
+            legendPanel.removeAll();
+            legendPanel.revalidate();
+            legendPanel.repaint();
         }
     }
-
-    private void drawLegend(Graphics g, int width, int height) { //this can work if we modify the pixel locations to be in line with this now being in its own panel. However, keep looking into dynamically resizing solution for now.
-        final int SIZE12 = 12;
-        Font gameFont = new Font("SansSerif", Font.PLAIN, SIZE12);
-        g.setFont(gameFont);
-        g.setColor(Color.white);
-        if(biomeFlag) {
-            g.drawString("Tropical Rainforest", 25, 14);
-            g.setColor(tropicalRainforest);
-            g.fillRect(7, 2, 14, 14);
-
-            g.setColor(Color.white);
-            g.drawString("Tropical Seasonal Rainforest", 160, 14);
-            g.setColor(tropicalSeasonalRain);
-            g.fillRect(142, 2, 14, 14);
-
-            g.setColor(Color.white);
-            g.drawString("Savanna", 350, 14);
-            g.setColor(savanna);
-            g.fillRect(332, 2, 14, 14);
-
-            g.setColor(Color.white);
-            g.drawString("Desert", 434, 14);
-            g.setColor(desert);
-            g.fillRect(414, 2, 14, 14);
-
-            g.setColor(Color.white);
-            g.drawString("Taiga", 505, 14);
-            g.setColor(taiga);
-            g.fillRect(487, 2, 14, 14);
-
-            g.setColor(Color.white);
-            g.drawString("Tundra", 568, 14);
-            g.setColor(tundra);
-            g.fillRect(550, 2, 14, 14);
-
-            g.setColor(Color.white);
-            g.drawString("Alpine", 525, 34);
-            g.setColor(mountainWhite);
-            g.fillRect(507, 22, 14, 14);
-
-            g.setColor(Color.white);
-            g.drawString("Temperate Rainforest", 25, 34);
-            g.setColor(temperateRainforest);
-            g.fillRect(7, 22, 14, 14);
-
-            g.setColor(Color.white);
-            g.drawString("Temperate Deciduous Forest", 176, 34);
-            g.setColor(temperateDeciduous);
-            g.fillRect(158, 22, 14, 14);
-
-            g.setColor(Color.white);
-            g.drawString("Temperate Grasslands", 368, 34);
-            g.setColor(temperateGrassland);
-            g.fillRect(348, 22, 14, 14);
-        }
-        if(maxRangeFlag) {
-            g.setColor(Color.cyan);
-            g.fillRect(7, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString("Stable Temperatures", 25, 612);
-
-            g.setColor(Color.green);
-            g.fillRect(152, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString("Light Fluctuation", 170, 612);
-
-            g.setColor(Color.yellow);
-            g.fillRect(274, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString("Moderate Fluctuation", 292, 612);
-
-            g.setColor(Color.red);
-            g.fillRect(421, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString("Extreme Fluctuation", 439, 612);
-        }
-        if(maxTempFlag) {
-            g.setColor(Color.cyan);
-            g.fillRect(7, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString(Math.round(globalMaxLow) + "°F", 25, 612);
-
-            g.setColor(Color.green);
-            g.fillRect(85, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString(Math.round(((globalMaxHigh-globalMaxLow) * .33) + globalMaxLow) + "°F", 103, 612);
-
-            g.setColor(Color.yellow);
-            g.fillRect(163, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString(Math.round(((globalMaxHigh-globalMaxLow) * .67) + globalMaxLow) + "°F", 181, 612);
-
-            g.setColor(Color.red);
-            g.fillRect(241, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString(Math.round(globalMaxHigh) + "°F", 259, 612);
-        }
-        if(minTempFlag) {
-            g.setColor(Color.cyan);
-            g.fillRect(7, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString(Math.round(globalMinLow) + "°F", 25, 612);
-
-            g.setColor(Color.green);
-            g.fillRect(85, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString(Math.round(((globalMinHigh-globalMinLow) * .33) + globalMinLow) + "°F", 103, 612);
-
-            g.setColor(Color.yellow);
-            g.fillRect(163, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString(Math.round(((globalMinHigh-globalMinLow) * .67) + globalMinLow) + "°F", 181, 612);
-
-            g.setColor(Color.red);
-            g.fillRect(241, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString(Math.round(globalMinHigh) + "°F", 259, 612);
-        }
-        if(avgTempFlag) {
-            g.setColor(Color.cyan);
-            g.fillRect(7, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString(Math.round(globalAvgLow) + "°F", 25, 612);
-
-            g.setColor(Color.green);
-            g.fillRect(85, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString(Math.round(((globalAvgHigh-globalAvgLow) * .33) + globalAvgLow) + "°F", 103, 612);
-
-            g.setColor(Color.yellow);
-            g.fillRect(163, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString(Math.round(((globalAvgHigh-globalAvgLow) * .67) + globalAvgLow) + "°F", 181, 612);
-
-            g.setColor(Color.red);
-            g.fillRect(241, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString(Math.round(globalAvgHigh) + "°F", 259, 612);
-        }
-        if(precipFlag) {
-            g.setColor(Color.cyan);
-            g.fillRect(7, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString("100%", 25, 612);
-
-            g.setColor(Color.green);
-            g.fillRect(85, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString("67%", 103, 612);
-
-            g.setColor(Color.yellow);
-            g.fillRect(163, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString("33%", 181, 612);
-
-            g.setColor(Color.red);
-            g.fillRect(241, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString("0%", 259, 612);
-        }
-    }
-
-    /*public void paintComponent(Graphics g){
-        setBackground(Color.BLACK);
-        super.paintComponent(g);
-        for(int c=0; c<cellColumnCount; c++) {
-            for (int r = 0; r < cellRowCount; r++) {
-                g.setColor(grid[c][r].getColor());
-                g.fillRect(grid[c][r].getX(), grid[c][r].getY(), cellWidth, cellHeight);
-            }
-        }
-        final int SIZE12 = 12;
-        Font gameFont = new Font("SansSerif", Font.PLAIN, SIZE12);
-        g.setFont(gameFont);
-        g.setColor(Color.white);
-
-        g.drawString("(E)arth View", 5, 578);
-        g.drawString("(B)iomes", 165, 578);
-        g.drawString("(W)ater Availability", 165, 593);
-        g.drawString("(R)ange of Temperature", 300, 578);
-        g.drawString("(A)verage Temperature", 300, 593);
-        g.drawString("(H)ighest Temperature", 465, 578);
-        g.drawString("(L)owest Temperature", 465, 593);
-        if(windComesFrom.equals("west")) {
-            g.drawString("(D)irection of Wind: E", 5, 593);
-        }
-        else if(windComesFrom.equals("northwest")) {
-            g.drawString("(D)irection of Wind: SE", 5, 593);
-        }
-        else if(windComesFrom.equals("north")) {
-            g.drawString("(D)irection of Wind: S", 5, 593);
-        }
-        else if(windComesFrom.equals("northeast")) {
-            g.drawString("(D)irection of Wind: SW", 5, 593);
-        }
-        else if(windComesFrom.equals("east")) {
-            g.drawString("(D)irection of Wind: W", 5, 593);
-        }
-        else if(windComesFrom.equals("southeast")) {
-            g.drawString("(D)irection of Wind: NW", 5, 593);
-        }
-        else if(windComesFrom.equals("south")) {
-            g.drawString("(D)irection of Wind: N", 5, 593);
-        }
-        else if(windComesFrom.equals("southwest")) {
-            g.drawString("(D)irection of Wind: NE", 5, 593);
-        }
-        if(biomeFlag) {
-            g.drawString("Tropical Rainforest", 25, 612);
-            g.setColor(tropicalRainforest);
-            g.fillRect(7, 600, 14, 14);
-
-            g.setColor(Color.white);
-            g.drawString("Tropical Seasonal Rainforest", 160, 612);
-            g.setColor(tropicalSeasonalRain);
-            g.fillRect(142, 600, 14, 14);
-
-            g.setColor(Color.white);
-            g.drawString("Savanna", 350, 612);
-            g.setColor(savanna);
-            g.fillRect(332, 600, 14, 14);
-
-            g.setColor(Color.white);
-            g.drawString("Desert", 434, 612);
-            g.setColor(desert);
-            g.fillRect(414, 600, 14, 14);
-
-            g.setColor(Color.white);
-            g.drawString("Taiga", 505, 612);
-            g.setColor(taiga);
-            g.fillRect(487, 600, 14, 14);
-
-            g.setColor(Color.white);
-            g.drawString("Tundra", 568, 612);
-            g.setColor(tundra);
-            g.fillRect(550, 600, 14, 14);
-
-            g.setColor(Color.white);
-            g.drawString("Alpine", 525, 632);
-            g.setColor(mountainWhite);
-            g.fillRect(507, 620, 14, 14);
-
-            g.setColor(Color.white);
-            g.drawString("Temperate Rainforest", 25, 632);
-            g.setColor(temperateRainforest);
-            g.fillRect(7, 620, 14, 14);
-
-            g.setColor(Color.white);
-            g.drawString("Temperate Deciduous Forest", 176, 632);
-            g.setColor(temperateDeciduous);
-            g.fillRect(158, 620, 14, 14);
-
-            g.setColor(Color.white);
-            g.drawString("Temperate Grasslands", 368, 632);
-            g.setColor(temperateGrassland);
-            g.fillRect(348, 620, 14, 14);
-        }
-        if(maxRangeFlag) {
-            g.setColor(Color.cyan);
-            g.fillRect(7, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString("Stable Temperatures", 25, 612);
-
-            g.setColor(Color.green);
-            g.fillRect(152, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString("Light Fluctuation", 170, 612);
-
-            g.setColor(Color.yellow);
-            g.fillRect(274, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString("Moderate Fluctuation", 292, 612);
-
-            g.setColor(Color.red);
-            g.fillRect(421, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString("Extreme Fluctuation", 439, 612);
-        }
-        if(maxTempFlag) {
-            g.setColor(Color.cyan);
-            g.fillRect(7, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString(Math.round(globalMaxLow) + "°F", 25, 612);
-
-            g.setColor(Color.green);
-            g.fillRect(85, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString(Math.round(((globalMaxHigh-globalMaxLow) * .33) + globalMaxLow) + "°F", 103, 612);
-
-            g.setColor(Color.yellow);
-            g.fillRect(163, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString(Math.round(((globalMaxHigh-globalMaxLow) * .67) + globalMaxLow) + "°F", 181, 612);
-
-            g.setColor(Color.red);
-            g.fillRect(241, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString(Math.round(globalMaxHigh) + "°F", 259, 612);
-        }
-        if(minTempFlag) {
-            g.setColor(Color.cyan);
-            g.fillRect(7, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString(Math.round(globalMinLow) + "°F", 25, 612);
-
-            g.setColor(Color.green);
-            g.fillRect(85, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString(Math.round(((globalMinHigh-globalMinLow) * .33) + globalMinLow) + "°F", 103, 612);
-
-            g.setColor(Color.yellow);
-            g.fillRect(163, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString(Math.round(((globalMinHigh-globalMinLow) * .67) + globalMinLow) + "°F", 181, 612);
-
-            g.setColor(Color.red);
-            g.fillRect(241, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString(Math.round(globalMinHigh) + "°F", 259, 612);
-        }
-        if(avgTempFlag) {
-            g.setColor(Color.cyan);
-            g.fillRect(7, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString(Math.round(globalAvgLow) + "°F", 25, 612);
-
-            g.setColor(Color.green);
-            g.fillRect(85, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString(Math.round(((globalAvgHigh-globalAvgLow) * .33) + globalAvgLow) + "°F", 103, 612);
-
-            g.setColor(Color.yellow);
-            g.fillRect(163, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString(Math.round(((globalAvgHigh-globalAvgLow) * .67) + globalAvgLow) + "°F", 181, 612);
-
-            g.setColor(Color.red);
-            g.fillRect(241, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString(Math.round(globalAvgHigh) + "°F", 259, 612);
-        }
-        if(precipFlag) {
-            g.setColor(Color.cyan);
-            g.fillRect(7, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString("100%", 25, 612);
-
-            g.setColor(Color.green);
-            g.fillRect(85, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString("67%", 103, 612);
-
-            g.setColor(Color.yellow);
-            g.fillRect(163, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString("33%", 181, 612);
-
-            g.setColor(Color.red);
-            g.fillRect(241, 600, 14, 14);
-            g.setColor(Color.white);
-            g.drawString("0%", 259, 612);
-        }
-    }*/
 
     public int getCellColumnCount(){
         return cellColumnCount;
@@ -2126,7 +1808,31 @@ public class Grid extends JPanel{
         repaint();
     }
 
-    public void defineWaterAvail(String windDirection) {
+    public void defineWaterAvail() {
+        drawEarthMap();
+        if(waterAvailFirstRun) {
+            waterAvailFirstRun = false;
+        } else {
+            if (windComesFrom == null) {
+                windComesFrom = "west";
+            } else if (windComesFrom.equals("west")) {
+                windComesFrom = "northwest";
+            } else if (windComesFrom.equals("northwest")) {
+                windComesFrom = "north";
+            } else if (windComesFrom.equals("north")) {
+                windComesFrom = "northeast";
+            } else if (windComesFrom.equals("northeast")) {
+                windComesFrom = "east";
+            } else if (windComesFrom.equals("east")) {
+                windComesFrom = "southeast";
+            } else if (windComesFrom.equals("southeast")) {
+                windComesFrom = "south";
+            } else if (windComesFrom.equals("south")) {
+                windComesFrom = "southwest";
+            } else if (windComesFrom.equals("southwest")) {
+                windComesFrom = "west";
+            }
+        }
         for(int c=0; c<cellColumnCount; c++) {
             for(int r=0; r<cellRowCount; r++) {
                 boolean Ncheck = false, NEcheck = false, Echeck = false, SEcheck = false, Scheck = false, SWcheck = false, Wcheck = false, NWcheck = false;
@@ -2343,7 +2049,7 @@ public class Grid extends JPanel{
                 double semiOppositePenalty = .2; //.4
                 double oppositePenalty = .33; //.1
 
-                if (windDirection.equals("north")) {
+                if (windComesFrom.equals("north")) {
                     Nwater = (Math.pow(distModifier, Ndist) + ((1 - Math.pow(distModifier, Ndist)) * Math.pow(windBonus, Ndist))) * Nmtn;
                     NEwater = Math.pow(distModifier, NEdist) * slantedWind * NEmtn;
                     Ewater = Math.pow(distModifier, Edist) * perpendiculars * Emtn;
@@ -2353,7 +2059,7 @@ public class Grid extends JPanel{
                     Wwater = Math.pow(distModifier, Wdist) * perpendiculars * Wmtn;
                     NWwater = Math.pow(distModifier, NWdist) * slantedWind * NWmtn;
                 }
-                else if (windDirection.equals("west")) {
+                else if (windComesFrom.equals("west")) {
                     Nwater = Math.pow(distModifier, Ndist) * perpendiculars * Nmtn;
                     NEwater = Math.pow(distModifier, NEdist) * semiOppositePenalty * NEmtn;
                     Ewater = Math.pow(distModifier, Edist) * oppositePenalty * Emtn;
@@ -2363,7 +2069,7 @@ public class Grid extends JPanel{
                     Wwater = (Math.pow(distModifier, Wdist) + ((1 - Math.pow(distModifier, Wdist)) * Math.pow(windBonus, Wdist))) * Wmtn;
                     NWwater = Math.pow(distModifier, NWdist) * slantedWind * NWmtn;
                 }
-                else if (windDirection.equals("east")) {
+                else if (windComesFrom.equals("east")) {
                     Nwater = Math.pow(distModifier, Ndist) * perpendiculars * Nmtn;
                     NEwater = Math.pow(distModifier, NEdist) * slantedWind * NEmtn;
                     Ewater = (Math.pow(distModifier, Edist) + ((1 - Math.pow(distModifier, Edist)) * Math.pow(windBonus, Edist))) * Emtn;
@@ -2373,7 +2079,7 @@ public class Grid extends JPanel{
                     Wwater = Math.pow(distModifier, Wdist) * oppositePenalty * Wmtn;
                     NWwater = Math.pow(distModifier, NWdist) * semiOppositePenalty * NWmtn;
                 }
-                else if (windDirection.equals("south")) {
+                else if (windComesFrom.equals("south")) {
                     Nwater = Math.pow(distModifier, Ndist) * oppositePenalty * Nmtn;
                     NEwater = Math.pow(distModifier, NEdist) * semiOppositePenalty * NEmtn;
                     Ewater = Math.pow(distModifier, Edist) * perpendiculars * Emtn;
@@ -2383,7 +2089,7 @@ public class Grid extends JPanel{
                     Wwater = Math.pow(distModifier, Wdist) * perpendiculars * Wmtn;
                     NWwater = Math.pow(distModifier, NWdist) * semiOppositePenalty * NWmtn;
                 }
-                else if (windDirection.equals("northwest")) {
+                else if (windComesFrom.equals("northwest")) {
                     Nwater = Math.pow(distModifier, Ndist) * slantedWind * Nmtn;
                     NEwater = Math.pow(distModifier, NEdist) * perpendiculars *NEmtn;
                     Ewater = Math.pow(distModifier, Edist) * semiOppositePenalty * Emtn;
@@ -2393,7 +2099,7 @@ public class Grid extends JPanel{
                     Wwater = Math.pow(distModifier, Wdist) * slantedWind * Wmtn;
                     NWwater = (Math.pow(distModifier, NWdist) + ((1 - Math.pow(distModifier, NWdist)) * Math.pow(windBonus, NWdist))) * NWmtn;
                 }
-                else if (windDirection.equals("northeast")) {
+                else if (windComesFrom.equals("northeast")) {
                     Nwater = Math.pow(distModifier, Ndist) * slantedWind * Nmtn;
                     NEwater = (Math.pow(distModifier, NEdist) + ((1 - Math.pow(distModifier, NEdist)) * Math.pow(windBonus, NEdist))) * NEmtn;
                     Ewater = Math.pow(distModifier, Edist) * slantedWind * Emtn;
@@ -2403,7 +2109,7 @@ public class Grid extends JPanel{
                     Wwater = Math.pow(distModifier, Wdist) * semiOppositePenalty * Wmtn;
                     NWwater = Math.pow(distModifier, NWdist) * perpendiculars * NWmtn;
                 }
-                else if (windDirection.equals("southwest")) {
+                else if (windComesFrom.equals("southwest")) {
                     Nwater = Math.pow(distModifier, Ndist) * semiOppositePenalty * Nmtn;
                     NEwater = Math.pow(distModifier, NEdist) * oppositePenalty * NEmtn;
                     Ewater = Math.pow(distModifier, Edist) * semiOppositePenalty * Emtn;
@@ -2413,7 +2119,7 @@ public class Grid extends JPanel{
                     Wwater = Math.pow(distModifier, Wdist) * slantedWind * Wmtn;
                     NWwater = Math.pow(distModifier, NWdist) * perpendiculars * NWmtn;
                 }
-                else if (windDirection.equals("southeast")) {
+                else if (windComesFrom.equals("southeast")) {
                     Nwater = Math.pow(distModifier, Ndist) * semiOppositePenalty * Nmtn;
                     NEwater = Math.pow(distModifier, NEdist) * perpendiculars * NEmtn;
                     Ewater = Math.pow(distModifier, Edist) * slantedWind * Emtn;
@@ -2461,16 +2167,15 @@ public class Grid extends JPanel{
         freshwaterCount = 0;
 
         assignBiomes();
+        drawPrecipMap();
+    }
 
-        if(windComesFrom == null) {windComesFrom = "west";}
-        else if(windComesFrom.equals("west")) {windComesFrom = "northwest";}
-        else if(windComesFrom.equals("northwest")) {windComesFrom = "north";}
-        else if(windComesFrom.equals("north")) {windComesFrom = "northeast";}
-        else if(windComesFrom.equals("northeast")) {windComesFrom = "east";}
-        else if(windComesFrom.equals("east")) {windComesFrom = "southeast";}
-        else if(windComesFrom.equals("southeast")) {windComesFrom = "south";}
-        else if(windComesFrom.equals("south")) {windComesFrom = "southwest";}
-        else if(windComesFrom.equals("southwest")) {windComesFrom = "west";}
+    public String getWindComesFrom(){
+        return windComesFrom;
+    }
+
+    public void setWindComesFrom(String newDirection){
+        windComesFrom = newDirection;
     }
 
     public void averagePrecip() {
@@ -2738,6 +2443,7 @@ public class Grid extends JPanel{
             }
         }
         precipFlag = true;
+        updateLegend();
         repaint();
     }
 
@@ -2751,7 +2457,6 @@ public class Grid extends JPanel{
                 if (grid[c][r].getMaxTemp() < worldTempLowest && !grid[c][r].getColor().equals(oceanBlue)) {worldTempLowest = grid[c][r].getMaxTemp();}
             }
         }
-        //System.out.println("High: " + worldTempHighest + " Low: " + worldTempLowest);
         double tempRange = worldTempHighest - worldTempLowest;
 
         for(int c=0; c<cellColumnCount; c++) {
@@ -2761,28 +2466,20 @@ public class Grid extends JPanel{
                 }
                 else if (((worldTempHighest - grid[c][r].getMaxTemp())/tempRange) < .333) {
                     int mapColor = (int)Math.floor(255 * (((worldTempHighest - grid[c][r].getMaxTemp())/tempRange))/.333);
-                    /*System.out.println("C: " + c + " R: " + r);
-                    System.out.println(worldTempHighest + " " + grid[c][r].getMaxTemp() + " " + tempRange);
-                    System.out.println(mapColor);*/
                     grid[c][r].setColor(new Color(255, mapColor, 0));
                 }
                 else if (((worldTempHighest - grid[c][r].getMaxTemp())/tempRange) >= .333 && ((worldTempHighest - grid[c][r].getMaxTemp())/tempRange) < .666) {
                     int mapColor = (int)Math.floor(255 * (((.666 - (worldTempHighest - grid[c][r].getMaxTemp())/tempRange))/.333));
-                    /*System.out.println("C: " + c + " R: " + r);
-                    System.out.println(worldTempHighest + " " + grid[c][r].getMaxTemp() + " " + tempRange);
-                    System.out.println(mapColor);*/
                     grid[c][r].setColor(new Color(mapColor, 255, 0));
                 }
                 else if (((worldTempHighest - grid[c][r].getMaxTemp())/tempRange) >= .666) {
                     int mapColor = (int)Math.floor(255 * (((worldTempHighest - grid[c][r].getMaxTemp())/tempRange) - .666) * 3);
-                    /*System.out.println("C: " + c + " R: " + r);
-                    System.out.println(worldTempHighest + " " + grid[c][r].getMaxTemp() + " " + tempRange);
-                    System.out.println(mapColor);*/
                     grid[c][r].setColor(new Color(0, 255,mapColor));
                 }
             }
         }
         maxTempFlag = true;
+        updateLegend();
         repaint();
     }
 
@@ -2819,6 +2516,7 @@ public class Grid extends JPanel{
             }
         }
         minTempFlag = true;
+        updateLegend();
         repaint();
     }
 
@@ -2853,6 +2551,7 @@ public class Grid extends JPanel{
             }
         }
         avgTempFlag = true;
+        updateLegend();
         repaint();
     }
 
@@ -2886,6 +2585,7 @@ public class Grid extends JPanel{
             }
         }
         maxRangeFlag = true;
+        updateLegend();
         repaint();
     }
 
@@ -3000,6 +2700,7 @@ public class Grid extends JPanel{
                 .append(String.format("%.2f", taigaCount * total))
                 .append("%\n");
         biomeFlag = true;
+        updateLegend();
         repaint();
         Main.updateTextArea(output.toString());
     }
@@ -3012,6 +2713,7 @@ public class Grid extends JPanel{
             }
         }
         earthFlag = true;
+        updateLegend();
         repaint();
     }
 

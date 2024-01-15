@@ -12,7 +12,7 @@ public class MouseListenerClass extends Grid implements MouseListener {
         double mouseY = Math.floor((e.getY() - (double)getTopInset() - getTopBlackspace())/getCellHeight());
         if(mouseX >= 0 && mouseX < getCellColumnCount() && mouseY >= 0 && mouseY < getCellRowCount()){
             StringBuilder output = new StringBuilder();
-            output.append((int)mouseX + " " + (int)mouseY);
+            output.append("X: " + (int)mouseX + "   Y: " + (int)mouseY);
 
             GridCell cell = mainWindow.getGameGrid().getCellAtXY((int)mouseX, (int)mouseY);
             if(cell.isLake()){
@@ -22,6 +22,8 @@ public class MouseListenerClass extends Grid implements MouseListener {
             } else {
                 output.append("\n").append(cell.getBiome());
             }
+            output.append("\nWater Availability: " + Math.round(100 * cell.getWater()) + "%");
+            output.append("\nHighest Temperature: " + cell.getMaxTemp() + "°F; Lowest Temperature: " + cell.getMinTemp() + "°F");
             output.append("\n-------------");
             mainWindow.updateTextArea(output.toString());
         }

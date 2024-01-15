@@ -3,7 +3,6 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 
 public class KeyListenerClass extends Grid implements KeyListener{
-    private String windComesFrom = "west";
     public void keyTyped(KeyEvent e) {
         Grid grid = Main.getGameGrid();
         if(e.getKeyChar() == 'b') {
@@ -30,9 +29,11 @@ public class KeyListenerClass extends Grid implements KeyListener{
         if(e.getKeyChar() == KeyEvent.VK_ESCAPE){
             System.exit(0);
         }
-        if(e.getKeyChar() == '9') {
+        if(e.getKeyChar() == 'n') {
             Main.newMap();
-            windComesFrom = "west";
+            grid = Main.getGameGrid();
+            grid.setWindComesFrom("west");
+            Main.updateWindDirectionButton();
         }
         if(e.getKeyChar() == '1') {
             grid.removeSharpInlets();
@@ -60,54 +61,8 @@ public class KeyListenerClass extends Grid implements KeyListener{
             grid.repaint();
         }
         if(e.getKeyChar() == 'd') {
-            if (windComesFrom.equals("west")) {
-                grid.drawEarthMap();
-                grid.defineWaterAvail("northwest");
-                grid.drawPrecipMap();
-                windComesFrom = "northwest";
-            }
-            else if (windComesFrom.equals("northwest")) {
-                grid.drawEarthMap();
-                grid.defineWaterAvail("north");
-                grid.drawPrecipMap();
-                windComesFrom = "north";
-            }
-            else if (windComesFrom.equals("north")) {
-                grid.drawEarthMap();
-                grid.defineWaterAvail("northeast");
-                grid.drawPrecipMap();
-                windComesFrom = "northeast";
-            }
-            else if (windComesFrom.equals("northeast")) {
-                grid.drawEarthMap();
-                grid.defineWaterAvail("east");
-                grid.drawPrecipMap();
-                windComesFrom = "east";
-            }
-            else if (windComesFrom.equals("east")) {
-                grid.drawEarthMap();
-                grid.defineWaterAvail("southeast");
-                grid.drawPrecipMap();
-                windComesFrom = "southeast";
-            }
-            else if (windComesFrom.equals("southeast")) {
-                grid.drawEarthMap();
-                grid.defineWaterAvail("south");
-                grid.drawPrecipMap();
-                windComesFrom = "south";
-            }
-            else if (windComesFrom.equals("south")) {
-                grid.drawEarthMap();
-                grid.defineWaterAvail("southwest");
-                grid.drawPrecipMap();
-                windComesFrom = "southwest";
-            }
-            else if (windComesFrom.equals("southwest")) {
-                grid.drawEarthMap();
-                grid.defineWaterAvail("west");
-                grid.drawPrecipMap();
-                windComesFrom = "west";
-            }
+            grid.defineWaterAvail();
+            Main.updateWindDirectionButton();
         }
     }
     public void keyPressed(KeyEvent e) {}

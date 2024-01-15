@@ -8,6 +8,8 @@ public class Main extends JFrame{
     private static JTextArea textArea;
     private static Grid gameGrid = new Grid();
     private static Main frame = new Main();
+    private static JButton windDirectionButton;
+    private static JPanel buttonPanel;
 
     public Main() {
         setPreferredSize(new Dimension(WIDTH, HEIGHT));
@@ -18,8 +20,8 @@ public class Main extends JFrame{
         setLayout(new BorderLayout());
         setLocationRelativeTo(null);
 
-        //Return to below when you integrate the system output in the terminal into the main program
-        /*GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+        //Return to below when you integrate the system output in the terminal into the main program AND implement some scaling for monitor size
+/*        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
         GraphicsDevice gd = ge.getDefaultScreenDevice();
         if(gd.isFullScreenSupported()){
             setUndecorated(true);
@@ -48,19 +50,25 @@ public class Main extends JFrame{
         scrollPane.setPreferredSize(new Dimension(400, 100));
         add(scrollPane, BorderLayout.SOUTH);
 
+        buttonPanel = new JPanel();
+        buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.Y_AXIS));
+        buttonPanel.setBackground(Color.BLACK);
+        buttonPanel.add(Box.createVerticalStrut(20));
+
         JButton earthViewButton = createButton("(E)arth View", e -> gameGrid.drawEarthMap());
         JButton biomesButton = createButton("(B)iomes", e -> gameGrid.drawBiomes());
-        //JButton biomesButton = createButton("(D)irection of Wind: E", e -> gameGrid.draw);
         JButton waterButton = createButton("(W)ater Availability", e -> gameGrid.drawPrecipMap());
         JButton highTempButton = createButton("(H)ighest Temperature", e -> gameGrid.drawMaxTempMap());
         JButton lowTempButton = createButton("(L)owest Temperature", e -> gameGrid.drawMinTemp());
         JButton avgTempButton = createButton("(A)verage Temperature", e -> gameGrid.drawAvgTempMap());
         JButton rangeTempButton = createButton("(R)ange of Temperature", e -> gameGrid.drawMaxRangeMap());
-
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.Y_AXIS));
-        buttonPanel.setBackground(Color.BLACK);
-        buttonPanel.add(Box.createVerticalStrut(20));
+        windDirectionButton = createButton("(D)irection of Wind: W", e -> {
+            gameGrid.defineWaterAvail();
+            windDirectionButton.setText("(D)irection of Wind: " + getWindDirectionText());
+            buttonPanel.revalidate();
+            buttonPanel.repaint();
+        });
+        JButton newMapButton = createButton("(N)ew Map", e -> newMap());
 
         buttonPanel.add(earthViewButton);
         buttonPanel.add(biomesButton);
@@ -69,6 +77,9 @@ public class Main extends JFrame{
         buttonPanel.add(lowTempButton);
         buttonPanel.add(avgTempButton);
         buttonPanel.add(rangeTempButton);
+        buttonPanel.add(windDirectionButton);
+        buttonPanel.add(Box.createVerticalStrut(20));
+        buttonPanel.add(newMapButton);
 
         buttonPanel.add(Box.createVerticalGlue());
         add(buttonPanel, BorderLayout.EAST);
@@ -89,6 +100,25 @@ public class Main extends JFrame{
         textArea.append(text + "\n"); // Append new text with a newline
     }
 
+    private static String getWindDirectionText() {
+        switch (gameGrid.getWindComesFrom()) {
+            case "west": return "W";
+            case "northwest": return "NW";
+            case "north": return "N";
+            case "northeast": return "NE";
+            case "east": return "E";
+            case "southeast": return "SE";
+            case "south": return "S";
+            case "southwest": return "SW";
+            default: return "Unknown";
+        }
+    }
+
+    public static void updateWindDirectionButton(){
+        windDirectionButton.setText("(D)irection of Wind: " + getWindDirectionText());
+        buttonPanel.revalidate();
+        buttonPanel.repaint();
+    }
     public static Grid getGameGrid(){
         return gameGrid;
     }
@@ -107,7 +137,8 @@ public class Main extends JFrame{
         gameGrid.mountainPlacer();
         gameGrid.riverPlacer();
         gameGrid.storeTrueColor();
-        gameGrid.defineWaterAvail("west");
+        gameGrid.defineWaterAvail();
+        gameGrid.drawEarthMap();
         frame.add(gameGrid);
         frame.setVisible(true);
         Insets insets = frame.getInsets();
@@ -124,11 +155,11 @@ public class Main extends JFrame{
 //TO DO
 
 /*
--PRIORITY - Remove redundant text at the bottom once all buttons are implemented. This is now in progress - fix before moving on.
+-Implement map size scaling so we can uncomment the fullscreen code in Main without it looking janky.
 -Need CustomButton class to set max width of buttons so we can eventually have it scale dynamically with how much space the map itself takes up.
--Add inset offset for where buttons start at top right. Implement wind direction change and new map buttons.
--For the wind direction logic in the keylistener class, why are we drawing the earth map before hand? Tried commenting it out
-    and setting the defineWaterAvail getColors() to getTrueColors() but that didn't fix it. Investigate further.
+-drawEarth has been put at the beginning of definewaterAvail but the following question still lingers. For the wind direction logic in the keylistener class,
+    why are we drawing the earth map before hand? Tried commenting it out and setting the defineWaterAvail getColors() to getTrueColors() but that didn't fix it. Investigate further.
+-Check heat calculations. A lot of the interior of continents gets very cold for the low temperatures despite being on the equator.
 -Precipitation fix for how rivers/lakes affect systems - since the lakes on our map only represent giant lakes, they can still generate
     some nearby precipitation. River adjacency will no longer raise water to .8-.9 in adjacent spaces - for this, we simply want to change
     the biome from desert to grassland, grassland to deciduous forest, savana to rainforest. However, come back and give this approach
@@ -144,6 +175,6 @@ public class Main extends JFrame{
 -Lakeplacer I'm fairly sure needs a sufficiently large continent to place the lake farther from oceans so make sure that distance requirement
 is taken into account with variable map sizes
 -Looks like past me created temporary neighbor variables just to get the count from that new temporary variable when I could just getNeighborCount directly, clean up
--There's something that doesn't stop the program from running but causes a rare edge case where, I'm suspecting, an island
+-There's something that needs fixing that doesn't stop the program from running but causes a rare edge case where, I'm suspecting, an island
     is placed near the left/right edges of the map in a way that causes it to stretch across the whole world.
 */
